@@ -9,10 +9,9 @@ public struct FallbackObservation: Equatable, Sendable {
     public var hardError: Bool
     public var consecutiveFailures: Int
     public var naturalDirection: Bool
-    public var dragDownAction: DragDownAction
 
     public init(axis: Axis, progress: Double, spaceBefore: UInt64, spaceAfter: UInt64, hardError: Bool,
-                consecutiveFailures: Int, naturalDirection: Bool, dragDownAction: DragDownAction) {
+                consecutiveFailures: Int, naturalDirection: Bool) {
         self.axis = axis
         self.progress = progress
         self.spaceBefore = spaceBefore
@@ -20,7 +19,6 @@ public struct FallbackObservation: Equatable, Sendable {
         self.hardError = hardError
         self.consecutiveFailures = consecutiveFailures
         self.naturalDirection = naturalDirection
-        self.dragDownAction = dragDownAction
     }
 }
 
@@ -53,13 +51,7 @@ public enum FallbackDecider {
         case .horizontal:
             return DiscreteStepper.horizontalStep(forDistance: o.progress, naturalDirection: o.naturalDirection)
         case .vertical:
-            if o.progress < 0 { return .missionControl }
-            switch o.dragDownAction {
-            case .exitMissionControl: return .missionControl
-            case .appExpose: return .appExpose
-            case .showDesktop: return .showDesktop
-            case .none: return nil
-            }
+            return .missionControl
         }
     }
 }

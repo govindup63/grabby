@@ -15,40 +15,23 @@
       "default": null,
       "description": "CoreGraphics button number. 0 (left) and 1 (right) are never valid. null means not configured."
     },
-    "switchingStyle": {
-      "type": "string",
-      "enum": ["smooth", "keyboard"],
-      "default": "smooth"
-    },
-    "dragDownAction": {
-      "type": "string",
-      "enum": ["exitMissionControl", "appExpose", "showDesktop", "none"],
-      "default": "exitMissionControl"
-    },
     "tapAction": {
       "type": "string",
-      "enum": ["missionControl", "appExpose", "showDesktop", "none", "passThrough"],
+      "enum": ["none", "missionControl", "appExpose", "showDesktop", "passThrough"],
       "default": "none"
     },
     "naturalDirection": {
       "type": ["boolean", "null"],
       "default": null,
-      "description": "null follows the system natural scrolling setting at launch."
+      "description": "null follows the system natural scrolling setting; true or false overrides it."
     },
-    "pinPointer": { "type": "boolean", "default": false },
-    "throwStrength": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.35, "description": "0 follows the mouse only; 1 lets a flick carry up to 60 percent of a desktop." },
+    "throwStrength": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.35,
+      "description": "0: the release position decides. 1: the hand's speed at release counts fully."
+    },
     "launchAtLogin": { "type": "boolean", "default": false }
-  },
-  "examples": [
-    {
-      "schemaVersion": 1,
-      "actionButton": 4,
-      "switchingStyle": "smooth",
-      "dragDownAction": "appExpose",
-      "tapAction": "missionControl",
-      "naturalDirection": null,
-      "pinPointer": true,
-      "launchAtLogin": true
-    }
-  ]
+  }
 }

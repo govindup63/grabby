@@ -4,10 +4,9 @@ import Testing
 @Suite struct FallbackDeciderTests {
     /// `distance` here is Dock progress: 1.0 is one desktop, 0.5 commits.
     func obs(axis: Axis = .horizontal, distance: Double, changed: Bool, hardError: Bool = false,
-             failures: Int = 0, natural: Bool = true, down: DragDownAction = .appExpose) -> FallbackObservation {
+             failures: Int = 0, natural: Bool = true) -> FallbackObservation {
         FallbackObservation(axis: axis, progress: distance / 100, spaceBefore: 1, spaceAfter: changed ? 2 : 1,
-                            hardError: hardError, consecutiveFailures: failures,
-                            naturalDirection: natural, dragDownAction: down)
+                            hardError: hardError, consecutiveFailures: failures, naturalDirection: natural)
     }
 
     @Test func unchangedSpaceIsNotAFailureTheDockMayHaveSlidBack() {
@@ -43,10 +42,9 @@ import Testing
         #expect(v.failureCount == 1)
     }
 
-    @Test func verticalHardErrorCatchesUpWithTheRightAction() {
+    @Test func verticalHardErrorCatchesUpWithMissionControlEitherWay() {
         #expect(FallbackDecider.decide(obs(axis: .vertical, distance: -80, changed: false, hardError: true)).catchUpStep == .missionControl)
-        #expect(FallbackDecider.decide(obs(axis: .vertical, distance: 80, changed: false, hardError: true, down: .showDesktop)).catchUpStep == .showDesktop)
-        #expect(FallbackDecider.decide(obs(axis: .vertical, distance: 80, changed: false, hardError: true, down: .none)).catchUpStep == nil)
+        #expect(FallbackDecider.decide(obs(axis: .vertical, distance: 80, changed: false, hardError: true)).catchUpStep == .missionControl)
     }
 
     @Test func directionFollowsNaturalDirection() {

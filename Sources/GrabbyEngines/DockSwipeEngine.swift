@@ -24,9 +24,6 @@ public final class DockSwipeEngine: @unchecked Sendable {
     /// itself read as a new discrete swipe, so this is off until proven necessary.
     public var resendEndEvents = false
 
-    public enum AttachMode: String, Sendable { case skyLight, poke }
-    /// Debug switch for the slide experiment; SkyLight is the normal path.
-    public var attachMode: AttachMode = .skyLight
 
     private let api: grabby_private_api
     private let fakeFailure: Bool
@@ -113,32 +110,7 @@ public final class DockSwipeEngine: @unchecked Sendable {
         guard let wrapper = CGEvent(source: nil),
               let type = CGEventType(rawValue: UInt32(GRABBY_CGEVENT_TYPE_GESTURE_WRAPPER)) else { return nil }
         wrapper.type = type
-        switch attachMode {
-        case .skyLight: attach(wrapper, hidEvent)
-        case .poke: grabby_poke_hid_event(wrapper, hidEvent)
-        }
+        attach(wrapper, hidEvent)
         return wrapper
-    }
-}
-
-
-extension DockSwipeEngine {
-    /// Scripted slide with no mouse involved: ramps a quarter of a desktop over two seconds,
-    /// holds for a second, then cancels so the desktop should return. Blocks the calling thread.
-    public func runSlideExperiment(oneSpace: Double, mode: AttachMode) {
-        let previous = attachMode
-        attachMode = mode
-        defer { attachMode = previous }
-        let target = 0.25 * oneSpace
-        let steps = 120
-        Trace.log("experiment start mode=\(mode.rawValue) target=\(target)")
-        post(axis: .horizontal, phase: .began, progress: 0)
-        for i in 1...steps {
-            usleep(16_000)
-            post(axis: .horizontal, phase: .changed, progress: target * Double(i) / Double(steps))
-        }
-        usleep(1_000_000)
-        post(axis: .horizontal, phase: .cancelled, progress: target, exitSpeed: 0)
-        Trace.log("experiment end")
     }
 }

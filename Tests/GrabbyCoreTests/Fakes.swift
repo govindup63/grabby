@@ -37,13 +37,6 @@ final class FakeSpaces: SpaceReader {
     func screenSize() -> Size { size }
 }
 
-final class FakePointer: PointerPin {
-    var pinned: [Point] = []
-    var unpinCount = 0
-    func pin(at origin: Point) { pinned.append(origin) }
-    func unpin() { unpinCount += 1 }
-}
-
 final class FakeNotifier: UserNotifier {
     var notices = 0
     func showFallbackNotice() { notices += 1 }
@@ -53,13 +46,12 @@ struct Harness {
     let clock = FakeClock()
     let output = FakeOutput()
     let spaces = FakeSpaces()
-    let pointer = FakePointer()
     let notifier = FakeNotifier()
     let controller: GestureController
 
     init(settings: Settings = .defaults, smoothAvailable: Bool = true) {
         controller = GestureController(settings: settings, smoothAvailable: smoothAvailable, clock: clock,
-                                       output: output, spaces: spaces, pointer: pointer, notifier: notifier)
+                                       output: output, spaces: spaces, notifier: notifier)
     }
 
     /// Moves the pointer and advances the clock past the coalescing interval.

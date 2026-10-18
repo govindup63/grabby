@@ -1,23 +1,15 @@
 import CoreGraphics
 import Foundation
-import GrabbyCore
 import GrabbyEngines
 
-/// Reports raw pointer deltas while enabled. Enabled only between action-button down and up.
-/// Also implements pointer pinning by warping the cursor back to the drag origin.
-final class MoveTap: PointerPin, @unchecked Sendable {
+/// Reports pointer travel on screen while enabled. Enabled only between action-button down and up.
+final class MoveTap: @unchecked Sendable {
     private let thread: TapThread
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
-    private let lock = NSLock()
-    private var _pinOrigin: CGPoint?
+    private var lastLocation: CGPoint?
 
     var onMove: (@Sendable (Double, Double) -> Void)?
-
-    var pinOrigin: CGPoint? {
-        get { lock.withLock { _pinOrigin } }
-        set { lock.withLock { _pinOrigin = newValue } }
-    }
 
     init(thread: TapThread) {
         self.thread = thread
@@ -59,22 +51,6 @@ final class MoveTap: PointerPin, @unchecked Sendable {
         if let t = tap { CGEvent.tapEnable(tap: t, enable: enabled) }
     }
 
-    private var lastLocation: CGPoint?
-
-    var isEnabled: Bool {
-        thread.sync { [self] in tap.map { CGEvent.tapIsEnabled(tap: $0) } ?? false }
-    }
-
-    // MARK: PointerPin
-
-    func pin(at origin: Point) {
-        pinOrigin = CGPoint(x: origin.x, y: origin.y)
-    }
-
-    func unpin() {
-        pinOrigin = nil
-    }
-
     fileprivate func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout {
             Log.tap.warning("MoveTap disabled by timeout, re-enabling")
@@ -83,22 +59,11 @@ final class MoveTap: PointerPin, @unchecked Sendable {
         }
         if type == .tapDisabledByUserInput { return Unmanaged.passUnretained(event) }
         if GrabbyEventSource.isOwnEvent(event) { return Unmanaged.passUnretained(event) }
-        // Pointer travel on screen (accelerated points) when the pointer is free, so the desktop moves
-        // as far as the hand does. Raw device counts when pinned, because the pointer does not move.
-        let dx: Double
-        let dy: Double
-        if let origin = pinOrigin {
-            dx = Double(event.getIntegerValueField(.mouseEventDeltaX))
-            dy = Double(event.getIntegerValueField(.mouseEventDeltaY))
-            CGWarpMouseCursorPosition(origin)
-        } else {
-            let location = event.location
-            let last = lastLocation ?? location
-            dx = location.x - last.x
-            dy = location.y - last.y
-            lastLocation = location
-        }
-        onMove?(dx, dy)
+        // Pointer travel on screen in points, so the desktop moves as far as the hand does.
+        let location = event.location
+        let last = lastLocation ?? location
+        lastLocation = location
+        onMove?(location.x - last.x, location.y - last.y)
         return Unmanaged.passUnretained(event)
     }
 }

@@ -17,16 +17,6 @@ public enum ComboButton: Sendable, Equatable {
     case left, right
 }
 
-public enum SwitchingStyle: String, Codable, Sendable {
-    case smooth, keyboard
-}
-
-public enum DragDownAction: String, Codable, Sendable {
-    /// Close Mission Control if it is open, back to the app; otherwise do nothing.
-    case exitMissionControl
-    case appExpose, showDesktop, none
-}
-
 public enum TapAction: String, Codable, Sendable {
     case missionControl, appExpose, showDesktop, none, passThrough
 }
@@ -67,11 +57,6 @@ public protocol SpaceReader: AnyObject {
     func activeSpace() -> UInt64
     func spaceCount(onDisplayUnderPointer: Bool) -> Int
     func screenSize() -> Size
-}
-
-public protocol PointerPin: AnyObject {
-    func pin(at origin: Point)
-    func unpin()
 }
 
 public protocol UserNotifier: AnyObject {

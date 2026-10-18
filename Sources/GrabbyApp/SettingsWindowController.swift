@@ -15,6 +15,8 @@ final class SettingsWindowController {
         window.center()
     }
 
+    var isVisible: Bool { window.isVisible }
+
     func show() {
         onAppear?()
         window.makeKeyAndOrderFront(nil)

@@ -7,15 +7,13 @@ public struct DiscreteStepper: Sendable {
     public static let nextStep: Double = 200
 
     private let axis: Axis
-    private let dragDownAction: DragDownAction
     private let naturalDirection: Bool
     private var distance: Double = 0
     private var committed = 0  // signed step count in the current direction
     private var verticalFired = false
 
-    public init(axis: Axis, dragDownAction: DragDownAction, naturalDirection: Bool) {
+    public init(axis: Axis, naturalDirection: Bool) {
         self.axis = axis
-        self.dragDownAction = dragDownAction
         self.naturalDirection = naturalDirection
     }
 
@@ -30,13 +28,8 @@ public struct DiscreteStepper: Sendable {
         case .vertical:
             guard !verticalFired, abs(distance) >= DiscreteStepper.firstStep else { return [] }
             verticalFired = true
-            if distance < 0 { return [.missionControl] }
-            switch dragDownAction {
-            case .exitMissionControl: return [.missionControl]  // the hotkey toggles it closed
-            case .appExpose: return [.appExpose]
-            case .showDesktop: return [.showDesktop]
-            case .none: return []
-            }
+            // Up opens Mission Control; down is only reached while it is open, and the hotkey toggles it closed.
+            return [.missionControl]
         case .horizontal:
             let direction = distance > 0 ? 1 : (distance < 0 ? -1 : 0)
             if direction != 0, committed != 0, (committed > 0) != (direction > 0) {

@@ -75,10 +75,6 @@ struct grabby_private_api {
 
 #define GRABBY_PRIVATE_SYMBOL_COUNT 12
 
-/// Attaches an IOHIDEvent to a CGEvent by writing the pointer where the window server reads it
-/// (Mac Mouse Fix's CGEventSetIOHIDEvent). Retains the event. Debug alternative to SLEventSetIOHIDEvent.
-void grabby_poke_hid_event(CGEventRef cgEvent, GrabbyHIDEventRef hidEvent);
-
 /// Resolves every symbol. Safe to call more than once. Never fails; check the pointers.
 struct grabby_private_api grabby_private_resolve(void);
 

@@ -7,11 +7,8 @@ import Testing
         let s = Settings.defaults
         #expect(s.schemaVersion == 1)
         #expect(s.actionButton == nil)
-        #expect(s.switchingStyle == .smooth)
-        #expect(s.dragDownAction == .exitMissionControl)
         #expect(s.tapAction == .none)
         #expect(s.naturalDirection == nil)
-        #expect(s.pinPointer == false)
         #expect(s.launchAtLogin == false)
         #expect(s.throwStrength == 0.35)
     }
@@ -27,9 +24,9 @@ import Testing
     @Test func jsonRoundTrip() throws {
         var s = Settings.defaults
         s.actionButton = 4
-        s.switchingStyle = .keyboard
         s.tapAction = .passThrough
         s.naturalDirection = false
+        s.throwStrength = 0.8
         let data = try JSONEncoder().encode(s)
         let back = try JSONDecoder().decode(Settings.self, from: data)
         #expect(back == s)
@@ -61,10 +58,8 @@ import Testing
         let json = #"{"schemaVersion":1,"tapAction":"appExpose"}"#
         let s = try JSONDecoder().decode(Settings.self, from: Data(json.utf8))
         #expect(s.tapAction == .appExpose)
-        #expect(s.dragDownAction == .exitMissionControl)
-        #expect(s.pinPointer == false)
         #expect(s.throwStrength == 0.35)
-        #expect(s.switchingStyle == .smooth)
+        #expect(s.naturalDirection == nil)
     }
 
     @Test func storeReturnsDefaultsWhenFileMissing() {
@@ -83,7 +78,7 @@ import Testing
         let store = SettingsStore(read: { box.data }, write: { box.data = $0 })
         var s = Settings.defaults
         s.actionButton = 5
-        s.pinPointer = true
+        s.naturalDirection = true
         try store.save(s)
         #expect(store.load() == s)
     }

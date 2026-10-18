@@ -24,7 +24,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let permissions = Permissions()
     private var tapsReady = false
     private var hasAccess = false
-    private var inspectorStarted = false
 
     private var spaces: SpaceObserver!
     private var hotkeys: HotkeyEngine!
@@ -34,7 +33,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsModel: SettingsModel!
     private var settingsWindow: SettingsWindowController!
     private var onboarding: OnboardingWindowController!
-    private let inspector = GestureInspector()
     private var conflictTimer: Timer?
     /// Only ever touched on the tap thread after construction.
     nonisolated(unsafe) private var controller: GestureController!
@@ -42,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         store = makeStore()
         settings = store.load()
-        Log.settings.info("Loaded settings: button=\(self.settings.actionButton.map(String.init) ?? "nil") style=\(self.settings.switchingStyle.rawValue)")
+        Log.settings.info("Loaded settings: button=\(self.settings.actionButton.map(String.init) ?? "nil")")
 
         smoothAvailable = withUnsafePointer(to: &privateAPI) { grabby_private_all_present($0) }
         for i in 0..<Int(GRABBY_PRIVATE_SYMBOL_COUNT) where !withUnsafePointer(to: &privateAPI, { grabby_private_symbol_present($0, Int32(i)) }) {
@@ -67,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.controller.reportHardError()
         }
         controller = GestureController(settings: settings, smoothAvailable: smoothAvailable, clock: MonotonicClock(),
-                                       output: output, spaces: spaces, pointer: moveTap, notifier: notifier)
+                                       output: output, spaces: spaces, notifier: notifier)
         controller.onTrace = { Trace.log($0) }
         controller.systemNaturalDirection = UserDefaults.standard.object(forKey: "com.apple.swipescrolldirection") as? Bool ?? true
         wireTaps()
@@ -83,22 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindow = SettingsWindowController(model: settingsModel)
         settingsWindow.onAppear = { [weak self] in self?.refreshConflicts() }
         statusItem.onOpenSettings = { [weak self] in self?.settingsWindow.show() }
-        statusItem.onExperiment = { [weak self] mode in
-            guard let self, let m = DockSwipeEngine.AttachMode(rawValue: mode) else { return }
-            let dock = self.dock!
-            let spaces = self.spaces!
-            // Give the menu time to close, then run off the main thread.
-            DispatchQueue.global(qos: .userInteractive).asyncAfter(deadline: .now() + 1.5) {
-                let scaler = SwipeProgressScaler(screen: spaces.screenSize(),
-                                                 spaceCount: spaces.spaceCount(onDisplayUnderPointer: true),
-                                                 naturalDirection: false)
-                dock.runSlideExperiment(oneSpace: scaler.offsetForOneSpace, mode: m)
-            }
-        }
         onboarding = OnboardingWindowController()
-        conflictTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.refreshConflicts() }
-        }
 
         permissions.startPolling { [weak self] granted in
             self?.accessChanged(granted)
@@ -111,6 +94,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func refreshConflicts() {
         settingsModel.conflicts = ConflictDetector.conflicts(actionButton: settings.actionButton)
+        conflictTimer?.invalidate()
+        conflictTimer = nil
+        guard settingsWindow.isVisible else { return }
+        conflictTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { [weak self] _ in
+            Task { @MainActor in self?.refreshConflicts() }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -131,7 +120,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings = updated
         buttonTap.actionButton = updated.actionButton
         tapThread.async { [controller] in controller?.settings = updated }
-        Log.settings.info("Applied settings: button=\(updated.actionButton.map(String.init) ?? "nil") style=\(updated.switchingStyle.rawValue) tap=\(updated.tapAction.rawValue)")
+        Log.settings.info("Applied settings: button=\(updated.actionButton.map(String.init) ?? "nil") tap=\(updated.tapAction.rawValue)")
     }
 
     /// All three closures run on the tap thread, which is the only thread that drives the controller.
@@ -189,7 +178,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 tapsReady = buttonTap.create() && moveTap.create() && comboTap.create()
             }
             buttonTap.setEnabled(true)
-            if !inspectorStarted { inspectorStarted = inspector.start() }
             let text = tapsReady ? "Grabby is working" : "Could not start event taps"
             statusItem.setStatus(text)
             settingsModel.status = text

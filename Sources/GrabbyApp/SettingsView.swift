@@ -4,15 +4,17 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
 
+    private var working: Bool { model.status == "Grabby is working" }
+
     var body: some View {
         Form {
             Section {
                 HStack {
-                    Image(systemName: model.status == "Grabby is working" ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                        .foregroundStyle(model.status == "Grabby is working" ? .green : .orange)
+                    Image(systemName: working ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(working ? .green : .orange)
                     Text(model.status)
                     Spacer()
-                    if model.status != "Grabby is working" {
+                    if !working {
                         Button("Open Accessibility Settings") { Permissions.openAccessibilityPane() }
                     }
                 }
@@ -30,7 +32,7 @@ struct SettingsView: View {
                 }
                 switch model.learnState {
                 case .idle:
-                    Text("Hold this button and move the mouse to switch desktops.")
+                    Text("Hold this button and move the mouse: left or right slides between desktops, up opens Mission Control, down brings you back to your app.")
                         .font(.caption).foregroundStyle(.secondary)
                 case .listening:
                     Label("Press the mouse button you want to use. Left and right are not allowed.", systemImage: "cursorarrow.click")
@@ -40,23 +42,11 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Drag") {
-                Picker("Switching style", selection: $model.settings.switchingStyle) {
-                    Text("Smooth (follows the pointer)").tag(SwitchingStyle.smooth)
-                    Text("Keyboard shortcut (one desktop per step)").tag(SwitchingStyle.keyboard)
-                }
-                Picker("Natural direction", selection: naturalDirectionBinding) {
-                    Text("Follow system").tag(0)
-                    Text("On").tag(1)
-                    Text("Off").tag(2)
-                }
-                LabeledContent("Drag left or right", value: "Switch desktop")
-                LabeledContent("Drag up", value: "Mission Control")
-                Picker("Drag down", selection: $model.settings.dragDownAction) {
-                    Text("Back to your app (closes Mission Control)").tag(DragDownAction.exitMissionControl)
-                    Text("App Expose").tag(DragDownAction.appExpose)
-                    Text("Show Desktop").tag(DragDownAction.showDesktop)
-                    Text("Nothing").tag(DragDownAction.none)
+            Section("Sliding") {
+                Picker("Direction", selection: naturalDirectionBinding) {
+                    Text("Follow system scrolling").tag(0)
+                    Text("Natural").tag(1)
+                    Text("Reversed").tag(2)
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -65,7 +55,7 @@ struct SettingsView: View {
                         Text(throwLabel).foregroundStyle(.secondary).font(.caption)
                     }
                     Slider(value: $model.settings.throwStrength, in: 0...1, step: 0.05) {
-                        Text("Throw")
+                        EmptyView()
                     } minimumValueLabel: {
                         Image(systemName: "hand.point.up.left").foregroundStyle(.secondary)
                     } maximumValueLabel: {
@@ -89,7 +79,6 @@ struct SettingsView: View {
             }
 
             Section("General") {
-                Toggle("Keep pointer in place while dragging", isOn: $model.settings.pinPointer)
                 Toggle("Launch at login", isOn: $model.settings.launchAtLogin)
                 if let error = model.launchAtLoginError {
                     Text(error).font(.caption).foregroundStyle(.red)
@@ -111,7 +100,7 @@ struct SettingsView: View {
 
     private var throwLabel: String {
         let v = model.settings.throwStrength
-        if v == 0 { return "Follows the mouse" }
+        if v == 0 { return "Where you let go decides" }
         if v < 0.4 { return "Gentle" }
         if v < 0.75 { return "Medium" }
         return "Flick to switch"
