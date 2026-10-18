@@ -11,6 +11,9 @@ jobs:
   release:
     name: Build, sign and publish Grabby.app
     runs-on: macos-26
+    env:
+      HAS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_P12 != '' }}
+      SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,7 +26,7 @@ jobs:
         run: swift test
 
       - name: Import signing certificate (optional)
-        if: ${{ secrets.MACOS_CERTIFICATE_P12 != '' }}
+        if: env.HAS_CERTIFICATE == 'true'
         env:
           P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12 }}
           P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -39,9 +42,7 @@ jobs:
           rm cert.p12
 
       - name: Bundle and sign
-        env:
-          GRABBY_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY || '-' }}
-        run: scripts/bundle.sh
+        run: GRABBY_SIGN_IDENTITY="${SIGN_IDENTITY:--}" scripts/bundle.sh
 
       - name: Package
         run: |
@@ -62,7 +63,7 @@ jobs:
           if [ ! -s notes.md ]; then echo "Grabby $GITHUB_REF_NAME" > notes.md; fi
           {
             echo
-            echo "Signed: $([ -n '${{ secrets.MACOS_SIGN_IDENTITY }}' ] && echo 'Developer ID' || echo 'ad hoc (first launch: right-click, Open)')."
+            echo "Signed: $([ -n "$SIGN_IDENTITY" ] && echo 'Developer ID' || echo 'ad hoc (first launch: right-click, Open)')."
             echo "Requires macOS 26 or later and Accessibility access."
           } >> notes.md
 
