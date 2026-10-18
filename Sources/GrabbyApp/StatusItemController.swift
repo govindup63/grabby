@@ -8,7 +8,7 @@ final class StatusItemController {
 
     init() {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "cursorarrow.motionlines", accessibilityDescription: "Grabby")
+        item.button?.image = StatusItemController.menuBarImage()
         let menu = NSMenu()
         statusLine.isEnabled = false
         menu.addItem(statusLine)
@@ -20,6 +20,17 @@ final class StatusItemController {
         let quit = NSMenuItem(title: "Quit Grabby", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quit)
         item.menu = menu
+    }
+
+    /// The bundled template icon (follows the menu bar tint); the SF Symbol when run outside a bundle.
+    private static func menuBarImage() -> NSImage? {
+        if let url = Bundle.main.url(forResource: "MenuBarTemplate", withExtension: "png"),
+           let image = NSImage(contentsOf: url) {
+            image.isTemplate = true
+            image.size = NSSize(width: 18, height: 18)
+            return image
+        }
+        return NSImage(systemSymbolName: "cursorarrow.motionlines", accessibilityDescription: "Grabby")
     }
 
     func setStatus(_ text: String) {

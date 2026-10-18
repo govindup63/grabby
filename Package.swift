@@ -30,7 +30,7 @@ let package = Package(
         .executableTarget(
             name: "GrabbyApp",
             dependencies: ["GrabbyCore", "GrabbyPrivate", "GrabbyEngines"],
-            exclude: ["Resources/Info.plist"],
+            exclude: ["Resources"],
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("SwiftUI"),

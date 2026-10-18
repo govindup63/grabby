@@ -19,6 +19,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Grabby"
 cp Sources/GrabbyApp/Resources/Info.plist "$APP/Contents/Info.plist"
+cp Sources/GrabbyApp/Resources/AppIcon.icns Sources/GrabbyApp/Resources/MenuBarTemplate.png Sources/GrabbyApp/Resources/MenuBarTemplate@2x.png "$APP/Contents/Resources/"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 codesign --force --options runtime --sign "$IDENTITY" "$APP"

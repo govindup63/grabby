@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grabby logo options</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f4f4f6; --fg:#111; --muted:#666; --card:#fff; --line:#e3e3e8; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141418; --fg:#f2f2f2; --muted:#9a9aa3; --card:#1e1e24; --line:#2c2c34; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font: 15px/1.5 -apple-system, "SF Pro Text", Helvetica, Arial, sans-serif; padding: 32px 24px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  p.lead { color: var(--muted); margin: 0 0 28px; max-width: 70ch; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius: 18px; padding: 22px; display:flex; flex-direction:column; gap:14px; }
+  .card h2 { margin:0; font-size: 17px; display:flex; align-items:baseline; gap:10px; }
+  .card h2 .tag { font: 600 12px/1 -apple-system, sans-serif; background:var(--fg); color:var(--bg); border-radius:999px; padding:5px 9px; }
+  .card p { margin:0; color:var(--muted); font-size: 13.5px; }
+  .row { display:flex; align-items:flex-end; gap: 18px; flex-wrap: wrap; }
+  .sizes { display:flex; align-items:flex-end; gap: 14px; }
+  .sizes figure { margin:0; display:flex; flex-direction:column; align-items:center; gap:6px; font-size: 11px; color:var(--muted); }
+  .bar { display:flex; align-items:center; gap:14px; background: rgba(127,127,127,.12); border-radius: 10px; padding: 8px 12px; font-size: 12px; color: var(--muted); }
+  .bar .mb { display:flex; align-items:center; gap:8px; }
+  .bar .mb svg { width:18px; height:18px; }
+  .dark { background:#1c1c1e; color:#ddd; }
+  .light { background:#f0f0f3; color:#333; }
+  footer { margin-top: 36px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>Grabby logo options</h1>
+<p class="lead">Six directions, each shown as the macOS app icon at 128, 64 and 32 points, and as the monochrome menu bar template icon on light and dark menu bars. Pick a letter.</p>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <clipPath id="squircle" clipPathUnits="objectBoundingBox">
+      <path d="M0.5,0 C0.86,0 1,0.14 1,0.5 C1,0.86 0.86,1 0.5,1 C0.14,1 0,0.86 0,0.5 C0,0.14 0.14,0 0.5,0 Z"/>
+    </clipPath>
+    <linearGradient id="gA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f7cff"/><stop offset="1" stop-color="#2f4fd6"/></linearGradient>
+    <linearGradient id="gB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a3d"/><stop offset="1" stop-color="#ff3d77"/></linearGradient>
+    <linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2b30"/><stop offset="1" stop-color="#121216"/></linearGradient>
+    <linearGradient id="gD" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19c3a6"/><stop offset="1" stop-color="#0b7f8f"/></linearGradient>
+    <linearGradient id="gE" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdfdfd"/><stop offset="1" stop-color="#e4e4ea"/></linearGradient>
+    <linearGradient id="gF" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a5cff"/><stop offset="1" stop-color="#3b1fb3"/></linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity=".75"/></linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".25"/></filter>
+
+    <!-- A: three desktops fanned, a hand-shaped pointer holding the middle one -->
+    <symbol id="iconA" viewBox="0 0 128 128">
+      <rect width="128" height="128" fill="url(#gA)"/>
+      <g filter="url(#soft)">
+        <rect x="12" y="38" width="44" height="60" rx="8" fill="#fff" opacity=".35"/>
+        <rect x="72" y="38" width="44" height="60" rx="8" fill="#fff" opacity=".35"/>
+        <rect x="36" y="30" width="56" height="74" rx="9" fill="url(#panel)"/>
+      </g>
+      <path d="M58 70 c-4 -6 2 -11 6 -6 l0 -14 c0 -5 7 -5 7 0 l0 10 c0 -4 7 -4 7 0 l0 4 c0 -4 7 -4 7 0 l0 4 c0 -3 6 -3 6 1 l0 14 c0 10 -7 17 -16 17 c-8 0 -12 -3 -15 -8 z" fill="#1d2a6b"/>
+    </symbol>
+
+    <!-- B: cursor with motion trails, warm gradient -->
+    <symbol id="iconB" viewBox="0 0 128 128">
+      <rect width="128" height="128" fill="url(#gB)"/>
+      <g stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".55">
+        <line x1="22" y1="48" x2="46" y2="48"/><line x1="16" y1="64" x2="40" y2="64"/><line x1="22" y1="80" x2="46" y2="80"/>
+      </g>
+      <path d="M58 30 L58 92 L74 77 L84 100 L96 94 L86 72 L106 70 Z" fill="#fff" stroke="#9a1f3f" stroke-width="4" stroke-linejoin="round" filter="url(#soft)"/>
+    </symbol>
+
+    <!-- C: a mouse silhouette with the side button lit, dark -->
+    <symbol id="iconC" viewBox="0 0 128 128">
+      <rect width="128" height="128" fill="url(#gC)"/>
+      <path d="M64 18 c22 0 34 16 34 40 v18 c0 22 -14 36 -34 36 s-34 -14 -34 -36 V58 c0 -24 12 -40 34 -40 z" fill="#3a3a42" stroke="#55555f" stroke-width="2"/>
+      <path d="M64 18 v40 M30 60 h68" stroke="#55555f" stroke-width="2"/>
+      <rect x="58" y="30" width="12" height="18" rx="6" fill="#8e8e98"/>
+      <rect x="22" y="56" width="12" height="20" rx="6" fill="#4f7cff" filter="url(#soft)"/>
+      <path d="M12 66 h-4 M14 54 l-3 -3 M14 78 l-3 3" stroke="#4f7cff" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+
+    <!-- D: G monogram made of a sliding strip -->
+    <symbol id="iconD" viewBox="0 0 128 128">
+      <rect width="128" height="128" fill="url(#gD)"/>
+      <path d="M88 44 a30 30 0 1 0 6 20 h-30" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" filter="url(#soft)"/>
+      <g stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".5"><line x1="20" y1="96" x2="44" y2="96"/><line x1="52" y1="96" x2="64" y2="96"/></g>
+    </symbol>
+
+    <!-- E: light glass, two desktops mid-slide with a round grab handle -->
+    <symbol id="iconE" viewBox="0 0 128 128">
+      <rect width="128" height="128" fill="url(#gE)"/>
+      <rect x="6" y="36" width="60" height="56" rx="9" fill="#4f7cff" opacity=".9" filter="url(#soft)"/>
+      <rect x="76" y="36" width="60" height="56" rx="9" fill="#ff8a3d" opacity=".9" filter="url(#soft)"/>
+      <circle cx="64" cy="64" r="15" fill="#fff" stroke="#2b2b30" stroke-width="4"/>
+      <circle cx="64" cy="64" r="5" fill="#2b2b30"/>
+    </symbol>
+
+    <!-- F: open hand holding, violet -->
+    <symbol id="iconF" viewBox="0 0 128 128">
+      <rect width="128" height="128" fill="url(#gF)"/>
+      <rect x="30" y="24" width="68" height="46" rx="8" fill="#fff" opacity=".9" filter="url(#soft)"/>
+      <path d="M40 78 c-6 -8 4 -15 9 -8 l0 -16 c0 -6 9 -6 9 0 l0 12 c0 -5 9 -5 9 0 l0 3 c0 -5 9 -5 9 0 l0 4 c0 -4 8 -4 8 1 l0 16 c0 13 -9 22 -22 22 c-10 0 -15 -4 -19 -10 z" fill="#fff"/>
+    </symbol>
+
+    <!-- menu bar templates: single colour, drawn to read at 18px -->
+    <symbol id="mbA" viewBox="0 0 18 18"><rect x="1" y="5" width="6" height="9" rx="1.5" opacity=".45"/><rect x="11" y="5" width="6" height="9" rx="1.5" opacity=".45"/><rect x="5" y="3.5" width="8" height="12" rx="1.8"/></symbol>
+    <symbol id="mbB" viewBox="0 0 18 18"><path d="M8 2 V15 L11 12 L13 16 L15 15 L13 11 L17 10.5 Z"/><path d="M2 6 H5 M1 9 H4 M2 12 H5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="mbC" viewBox="0 0 18 18"><path d="M9 2 c3.5 0 5.5 2.5 5.5 6.5 v2 c0 3.5 -2.3 5.5 -5.5 5.5 S3.5 14 3.5 10.5 v-2 C3.5 4.5 5.5 2 9 2 z" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="1" y="7" width="2.6" height="4" rx="1.3"/></symbol>
+    <symbol id="mbD" viewBox="0 0 18 18"><path d="M13 6 a5 5 0 1 0 1 3 h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="mbE" viewBox="0 0 18 18"><rect x="1" y="5" width="7" height="8" rx="1.5" opacity=".6"/><rect x="10" y="5" width="7" height="8" rx="1.5" opacity=".6"/><circle cx="9" cy="9" r="3" fill="currentColor" stroke="currentColor"/></symbol>
+    <symbol id="mbF" viewBox="0 0 18 18"><rect x="4" y="2" width="10" height="6" rx="1.3" opacity=".55"/><path d="M5 11 c-1 -1.5 1 -2.5 2 -1 v-2.5 c0 -1 1.6 -1 1.6 0 v2 c0 -.8 1.6 -.8 1.6 0 v.5 c0 -.8 1.6 -.8 1.6 0 v.6 c0 -.6 1.4 -.6 1.4 .1 v2.3 c0 2.3 -1.6 3.8 -3.9 3.8 c-1.7 0 -2.6 -.7 -3.3 -1.8 z"/></symbol>
+  </defs>
+</svg>
+
+<div class="grid" id="grid"></div>
+
+<footer>All six are plain SVG, so whichever you pick can be exported to every icon size without loss and the menu bar version ships as a template image that follows the system tint.</footer>
+
+<script>
+const options = [
+  ["A", "Held desktop", "Three desktops fanned out, a hand holding the middle one. Says exactly what the app does.", "gA"],
+  ["B", "Cursor in motion", "The pointer with motion trails: a mouse app, motion as the message.", "gB"],
+  ["C", "The side button", "A mouse silhouette with the side button lit in blue. Literal, dark, understated.", "gC"],
+  ["D", "G strip", "A G drawn as one sliding stroke, with the strip trailing off. Monogram, works tiny.", "gD"],
+  ["E", "Mid-slide", "Two desktops caught mid-slide with a round grab handle between them. Light, playful.", "gE"],
+  ["F", "Open hand", "A hand reaching up to a desktop. Calm, violet, reads as 'grab' at a glance.", "gF"],
+];
+const grid = document.getElementById("grid");
+for (const [letter, name, blurb] of options) {
+  const icon = (s) => `<svg width="${s}" height="${s}" style="clip-path:url(#squircle)"><use href="#icon${letter}"/></svg>`;
+  const mb = `<svg viewBox="0 0 18 18" fill="currentColor"><use href="#mb${letter}"/></svg>`;
+  grid.insertAdjacentHTML("beforeend", `
+    <section class="card">
+      <h2><span class="tag">${letter}</span>${name}</h2>
+      <p>${blurb}</p>
+      <div class="sizes">
+        <figure>${icon(128)}<figcaption>128</figcaption></figure>
+        <figure>${icon(64)}<figcaption>64</figcaption></figure>
+        <figure>${icon(32)}<figcaption>32</figcaption></figure>
+      </div>
+      <div class="row">
+        <div class="bar light"><span class="mb">${mb} <b>Grabby is working</b></span><span>light menu bar</span></div>
+        <div class="bar dark"><span class="mb">${mb} <b>Grabby is working</b></span><span>dark menu bar</span></div>
+      </div>
+    </section>`);
+}
+</script>
+</body>
+</html>
