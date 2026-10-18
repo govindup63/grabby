@@ -10,7 +10,16 @@ let cltRoot = "/Library/Developer/CommandLineTools"
 let testingPlugins = "\(cltRoot)/usr/lib/swift/host/plugins/testing"
 let testingFrameworks = "\(cltRoot)/Library/Developer/Frameworks"
 let testingLibs = "\(cltRoot)/Library/Developer/usr/lib"
-let usesCommandLineToolsOnly = FileManager.default.fileExists(atPath: testingPlugins)
+// Only when the Command Line Tools are the active toolchain: Xcode's own toolchain ships its
+// own Swift Testing and cannot load the CLT plugin. GRABBY_CLT_TESTING=0/1 overrides the guess.
+let usesCommandLineToolsOnly: Bool = {
+    if let override = ProcessInfo.processInfo.environment["GRABBY_CLT_TESTING"] { return override == "1" }
+    let developerDir = ProcessInfo.processInfo.environment["DEVELOPER_DIR"] ?? ""
+    if developerDir.contains("Xcode") { return false }
+    let xcodeInstalled = (try? FileManager.default.contentsOfDirectory(atPath: "/Applications"))?
+        .contains { $0.hasPrefix("Xcode") && $0.hasSuffix(".app") } ?? false
+    return !xcodeInstalled && FileManager.default.fileExists(atPath: testingPlugins)
+}()
 let testSwiftSettings: [SwiftSetting] = usesCommandLineToolsOnly ? [.unsafeFlags(["-plugin-path", testingPlugins])] : []
 let testLinkerSettings: [LinkerSetting] = usesCommandLineToolsOnly ? [.unsafeFlags([
     "-Xlinker", "-rpath", "-Xlinker", testingFrameworks,
