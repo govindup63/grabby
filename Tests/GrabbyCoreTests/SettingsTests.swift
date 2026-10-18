@@ -11,7 +11,7 @@ import Testing
         #expect(s.dragDownAction == .appExpose)
         #expect(s.tapAction == .missionControl)
         #expect(s.naturalDirection == nil)
-        #expect(s.pinPointer == true)
+        #expect(s.pinPointer == false)
         #expect(s.launchAtLogin == false)
     }
 
@@ -53,7 +53,7 @@ import Testing
         let s = try JSONDecoder().decode(Settings.self, from: Data(json.utf8))
         #expect(s.tapAction == .none)
         #expect(s.dragDownAction == .appExpose)
-        #expect(s.pinPointer == true)
+        #expect(s.pinPointer == false)
         #expect(s.switchingStyle == .smooth)
     }
 
@@ -73,7 +73,7 @@ import Testing
         let store = SettingsStore(read: { box.data }, write: { box.data = $0 })
         var s = Settings.defaults
         s.actionButton = 5
-        s.pinPointer = false
+        s.pinPointer = true
         try store.save(s)
         #expect(store.load() == s)
     }

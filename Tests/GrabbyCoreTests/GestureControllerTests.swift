@@ -31,7 +31,7 @@ import Testing
 }
 
 @Suite struct GestureControllerSmoothTests {
-    let smooth = Settings.defaults.with { $0.switchingStyle = .smooth }
+    let smooth = Settings.defaults.with { $0.switchingStyle = .smooth; $0.pinPointer = true }
 
     @Test func horizontalDragBeginsChangesEnds() {
         let h = Harness(settings: smooth)
@@ -184,10 +184,10 @@ import Testing
 }
 
 @Suite struct GestureControllerKeyboardAndFallbackTests {
-    let smooth = Settings.defaults.with { $0.switchingStyle = .smooth }
+    let smooth = Settings.defaults.with { $0.switchingStyle = .smooth; $0.pinPointer = true }
 
     @Test func keyboardStyleStepsAt60And260WithoutDockSwipes() {
-        let h = Harness(settings: .defaults.with { $0.switchingStyle = .keyboard })
+        let h = Harness(settings: .defaults.with { $0.switchingStyle = .keyboard; $0.pinPointer = true })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.drag(dx: -60, dy: 0)
         #expect(h.output.steps == [.moveSpaceRight])

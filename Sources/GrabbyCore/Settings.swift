@@ -24,7 +24,7 @@ public struct Settings: Codable, Sendable, Equatable {
         dragDownAction: .appExpose,
         tapAction: .missionControl,
         naturalDirection: nil,
-        pinPointer: true,
+        pinPointer: false,
         launchAtLogin: false
     )
 

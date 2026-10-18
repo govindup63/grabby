@@ -35,7 +35,7 @@
       "default": null,
       "description": "null follows the system natural scrolling setting at launch."
     },
-    "pinPointer": { "type": "boolean", "default": true },
+    "pinPointer": { "type": "boolean", "default": false },
     "launchAtLogin": { "type": "boolean", "default": false }
   },
   "examples": [
