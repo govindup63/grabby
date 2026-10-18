@@ -31,8 +31,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var output: EngineOutput!
     private var notifier: MenuBarNotifier!
     private var settingsModel: SettingsModel!
-    private var settingsWindow: SettingsWindowController!
-    private var onboarding: OnboardingWindowController!
+    /// Built on first use: SwiftUI windows cost tens of megabytes and most launches never open them.
+    private lazy var settingsWindow: SettingsWindowController = {
+        let w = SettingsWindowController(model: settingsModel)
+        w.onAppear = { [weak self] in self?.refreshConflicts() }
+        return w
+    }()
+    private var settingsWindowBuilt = false
+    private var onboardingShown = false
+    private lazy var onboarding = OnboardingWindowController()
     private var conflictTimer: Timer?
     /// Only ever touched on the tap thread after construction.
     nonisolated(unsafe) private var controller: GestureController!
@@ -78,25 +85,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             self.buttonTap.setEnabled(self.hasAccess)
         }
-        settingsWindow = SettingsWindowController(model: settingsModel)
-        settingsWindow.onAppear = { [weak self] in self?.refreshConflicts() }
-        statusItem.onOpenSettings = { [weak self] in self?.settingsWindow.show() }
-        onboarding = OnboardingWindowController()
+        statusItem.onOpenSettings = { [weak self] in self?.showSettings() }
 
         permissions.startPolling { [weak self] granted in
             self?.accessChanged(granted)
         }
 
         if settings.actionButton == nil && hasAccess {
-            settingsWindow.show()
+            showSettings()
         }
+    }
+
+    private func showSettings() {
+        settingsWindowBuilt = true
+        settingsWindow.show()
     }
 
     private func refreshConflicts() {
         settingsModel.conflicts = ConflictDetector.conflicts(actionButton: settings.actionButton)
         conflictTimer?.invalidate()
         conflictTimer = nil
-        guard settingsWindow.isVisible else { return }
+        guard settingsWindowBuilt, settingsWindow.isVisible else { return }
         conflictTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { [weak self] _ in
             Task { @MainActor in self?.refreshConflicts() }
         }
@@ -181,8 +190,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let text = tapsReady ? "Grabby is working" : "Could not start event taps"
             statusItem.setStatus(text)
             settingsModel.status = text
-            onboarding.close()
-            if settings.actionButton == nil { settingsWindow.show() }
+            if onboardingShown { onboarding.close() }
+            if settings.actionButton == nil { showSettings() }
             Log.permission.info("Access granted, taps ready: \(self.tapsReady)")
         } else {
             buttonTap.setEnabled(false)
@@ -195,6 +204,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             statusItem.setStatus("Needs Accessibility access")
             settingsModel.status = "Needs Accessibility access"
+            onboardingShown = true
             onboarding.show()
             Log.permission.error("Accessibility access missing")
         }
