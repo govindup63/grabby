@@ -52,4 +52,14 @@ import Testing
         #expect(c.changed(delta: 0) == nil)
         #expect(c.lastDelta == -0.02)
     }
+
+    @Test func intervalFollowsTheDisplayRefreshRate() {
+        let clock = FakeClock()
+        var c = EventCoalescer(clock: clock, interval: .milliseconds(16))
+        _ = c.began(progress: 0)
+        clock.advance(.milliseconds(9))
+        #expect(c.changed(delta: 0.01) == nil)
+        clock.advance(.milliseconds(8))
+        #expect(c.changed(delta: 0.01) != nil)
+    }
 }

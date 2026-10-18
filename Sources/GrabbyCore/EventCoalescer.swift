@@ -1,8 +1,11 @@
 import Foundation
 
-/// Collapses "changed" progress updates to one per 8 ms (the trackpad cadence) without losing motion.
+/// Collapses "changed" progress updates to one per display frame without losing motion. A real
+/// trackpad sends one update per refresh of the display it drives; sending faster only makes the
+/// window server re-lay out the Spaces strip between frames.
 public struct EventCoalescer {
     public static let interval: Duration = .milliseconds(8)
+    public let interval: Duration
 
     public static let velocityWindow: Duration = .milliseconds(80)
 
@@ -12,8 +15,9 @@ public struct EventCoalescer {
     public private(set) var originOffset: Double = 0
     public private(set) var lastDelta: Double = 0
 
-    public init(clock: any GrabbyClock) {
+    public init(clock: any GrabbyClock, interval: Duration = EventCoalescer.interval) {
         self.clock = clock
+        self.interval = interval
     }
 
     public mutating func began(progress: Double) -> Double {
@@ -32,7 +36,7 @@ public struct EventCoalescer {
         let now = clock.now()
         samples.append((now, originOffset))
         samples.removeAll { now - $0.time > EventCoalescer.velocityWindow }
-        guard now - lastSentAt >= EventCoalescer.interval else { return nil }
+        guard now - lastSentAt >= interval else { return nil }
         lastSentAt = now
         return originOffset
     }

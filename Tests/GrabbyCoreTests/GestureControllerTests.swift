@@ -74,6 +74,17 @@ import Testing
         #expect(h.output.steps.isEmpty)
     }
 
+    @Test func updateRateMatchesTheDisplayUnderThePointer() {
+        let h = Harness()
+        h.spaces.refresh = .milliseconds(16)
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -10, dy: 0)          // began, clock +9 ms
+        h.drag(dx: -10, dy: 0)          // 9 ms since began: held on a 60 Hz display
+        h.drag(dx: -10, dy: 0)          // 18 ms: sent
+        let changes = h.output.calls.filter { if case .changed = $0 { return true } else { return false } }
+        #expect(changes.count == 1)
+    }
+
     @Test func shortDragStillEndsAndLetsTheDockSlideBack() {
         let h = Harness(settings: .defaults.with { $0.throwStrength = 0 })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))

@@ -13,6 +13,12 @@ public final class SpaceObserver: SpaceReader, @unchecked Sendable {
         self.api = api
     }
 
+    public func refreshInterval() -> Duration {
+        let rate = CGDisplayCopyDisplayMode(displayUnderPointer())?.refreshRate ?? 0
+        let hz = rate > 1 ? rate : 60
+        return .nanoseconds(Int64(1_000_000_000 / hz))
+    }
+
     /// Mission Control puts up Dock-owned windows that cover the display; nothing else does.
     public func missionControlIsActive() -> Bool {
         guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else {

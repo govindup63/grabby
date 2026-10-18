@@ -20,8 +20,9 @@ final class MoveTap: @unchecked Sendable {
             if tap != nil { return true }
             let mask: CGEventMask = (1 << CGEventType.otherMouseDragged.rawValue) | (1 << CGEventType.mouseMoved.rawValue)
             let info = Unmanaged.passUnretained(self).toOpaque()
+            // Listen-only: moves are never changed, so never hold the event stream waiting on us.
             guard let port = CGEvent.tapCreate(tap: .cghidEventTap, place: .headInsertEventTap,
-                                               options: .defaultTap, eventsOfInterest: mask,
+                                               options: .listenOnly, eventsOfInterest: mask,
                                                callback: moveTapCallback, userInfo: info) else {
                 Log.tap.error("MoveTap: tapCreate returned nil")
                 return false

@@ -16,15 +16,15 @@ public enum Trace {
         return f
     }()
 
+    nonisolated(unsafe) private static var handle: FileHandle? = {
+        let h = try? FileHandle(forWritingTo: url)
+        h?.seekToEndOfFile()
+        return h
+    }()
+
     public static func log(_ message: @autoclosure () -> String) {
         guard enabled else { return }
         let line = "\(formatter.string(from: Date())) \(message())\n"
-        queue.async {
-            if let handle = try? FileHandle(forWritingTo: url) {
-                handle.seekToEndOfFile()
-                handle.write(Data(line.utf8))
-                try? handle.close()
-            }
-        }
+        queue.async { handle?.write(Data(line.utf8)) }
     }
 }

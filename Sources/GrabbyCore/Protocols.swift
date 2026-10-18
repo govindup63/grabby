@@ -53,6 +53,8 @@ public protocol GestureOutput: AnyObject {
 }
 
 public protocol SpaceReader: AnyObject {
+    /// One frame of the display under the pointer.
+    func refreshInterval() -> Duration
     func missionControlIsActive() -> Bool
     func activeSpace() -> UInt64
     func spaceCount(onDisplayUnderPointer: Bool) -> Int

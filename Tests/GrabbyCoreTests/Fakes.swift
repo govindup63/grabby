@@ -31,6 +31,8 @@ final class FakeSpaces: SpaceReader {
     var count = 2
     var size = Size(width: 1000, height: 500)
     var missionControlOpen = false
+    var refresh: Duration = .milliseconds(8)
+    func refreshInterval() -> Duration { refresh }
     func missionControlIsActive() -> Bool { missionControlOpen }
     func activeSpace() -> UInt64 { space }
     func spaceCount(onDisplayUnderPointer: Bool) -> Int { count }

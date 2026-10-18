@@ -151,7 +151,7 @@ public final class GestureController: @unchecked Sendable {
             let scaler = SwipeProgressScaler(screen: spaces.screenSize(),
                                              spaceCount: spaces.spaceCount(onDisplayUnderPointer: true),
                                              naturalDirection: userNaturalDirection != systemNaturalDirection)
-            var coalescer = EventCoalescer(clock: clock)
+            var coalescer = EventCoalescer(clock: clock, interval: spaces.refreshInterval())
             let sent = coalescer.began(progress: progress(for: distance, axis: axis, scaler: scaler))
             spaceBefore = spaces.activeSpace()
             engine = .smooth(scaler, coalescer, axis)
