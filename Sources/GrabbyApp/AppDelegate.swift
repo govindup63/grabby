@@ -1,4 +1,5 @@
 import AppKit
+import CoreGraphics
 import GrabbyCore
 import GrabbyEngines
 import GrabbyPrivate
@@ -21,12 +22,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: StatusItemController!
     private let permissions = Permissions()
     private var tapsReady = false
+    private var hasAccess = false
 
     private var spaces: SpaceObserver!
     private var hotkeys: HotkeyEngine!
     private var dock: DockSwipeEngine!
     private var output: EngineOutput!
     private var notifier: MenuBarNotifier!
+    private var settingsModel: SettingsModel!
+    private var settingsWindow: SettingsWindowController!
     /// Only ever touched on the tap thread after construction.
     nonisolated(unsafe) private var controller: GestureController!
 
@@ -60,8 +64,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.systemNaturalDirection = UserDefaults.standard.object(forKey: "com.apple.swipescrolldirection") as? Bool ?? true
         wireTaps()
 
+        settingsModel = SettingsModel(settings: settings, store: store) { [weak self] updated in
+            self?.apply(updated)
+        }
+        settingsModel.onLearnStart = { [weak self] in self?.buttonTap.setEnabled(false) }
+        settingsModel.onLearnEnd = { [weak self] in
+            guard let self else { return }
+            self.buttonTap.setEnabled(self.hasAccess)
+        }
+        settingsWindow = SettingsWindowController(model: settingsModel)
+        statusItem.onOpenSettings = { [weak self] in self?.settingsWindow.show() }
+
         permissions.startPolling { [weak self] granted in
             self?.accessChanged(granted)
+        }
+
+        if settings.actionButton == nil {
+            settingsWindow.show()
         }
     }
 
@@ -76,6 +95,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         moveTap?.destroy()
     }
 
+    /// Settings changed in the UI: persist is done by the model; push to the taps and the controller.
+    private func apply(_ updated: Settings) {
+        settings = updated
+        buttonTap.actionButton = updated.actionButton
+        tapThread.async { [controller] in controller?.settings = updated }
+        Log.settings.info("Applied settings: button=\(updated.actionButton.map(String.init) ?? "nil") style=\(updated.switchingStyle.rawValue) tap=\(updated.tapAction.rawValue)")
+    }
+
     /// All three closures run on the tap thread, which is the only thread that drives the controller.
     private func wireTaps() {
         let controller = self.controller!
@@ -87,19 +114,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         moveTap.onMove = { dx, dy in
             controller.pointerMoved(dx: dx, dy: dy)
         }
-        buttonTap.onUp = {
+        buttonTap.onUp = { [weak self] in
             controller.actionButtonUp()
             moveTap.setEnabled(false)
+            if controller.lastTapWasPassThrough, let button = controller.settings.actionButton {
+                self?.replayClick(button: button)
+            }
         }
     }
 
+    /// Posts the swallowed click again, tagged so ButtonTap lets it through.
+    nonisolated private func replayClick(button: Int) {
+        guard let location = CGEvent(source: nil)?.location else { return }
+        let mouseButton = CGMouseButton(rawValue: UInt32(button)) ?? .center
+        let source = GrabbyEventSource.shared
+        guard let down = CGEvent(mouseEventSource: source, mouseType: .otherMouseDown, mouseCursorPosition: location, mouseButton: mouseButton),
+              let up = CGEvent(mouseEventSource: source, mouseType: .otherMouseUp, mouseCursorPosition: location, mouseButton: mouseButton) else { return }
+        down.setIntegerValueField(.mouseEventButtonNumber, value: Int64(button))
+        up.setIntegerValueField(.mouseEventButtonNumber, value: Int64(button))
+        down.post(tap: .cghidEventTap)
+        up.post(tap: .cghidEventTap)
+        Log.tap.debug("Replayed click for button \(button)")
+    }
+
     private func accessChanged(_ granted: Bool) {
+        hasAccess = granted
         if granted {
             if !tapsReady {
                 tapsReady = buttonTap.create() && moveTap.create()
             }
             buttonTap.setEnabled(true)
-            statusItem.setStatus(tapsReady ? "Grabby is working" : "Could not start event taps")
+            let text = tapsReady ? "Grabby is working" : "Could not start event taps"
+            statusItem.setStatus(text)
+            settingsModel.status = text
             Log.permission.info("Access granted, taps ready: \(self.tapsReady)")
         } else {
             buttonTap.setEnabled(false)
@@ -110,6 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
             statusItem.setStatus("Needs Accessibility access")
+            settingsModel.status = "Needs Accessibility access"
             Log.permission.error("Accessibility access missing")
         }
     }

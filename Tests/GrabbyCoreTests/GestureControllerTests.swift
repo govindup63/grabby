@@ -152,3 +152,33 @@ import Testing
         #expect(h.output.steps == [.missionControl])
     }
 }
+
+@Suite struct GestureControllerSettingsTests {
+    @Test func changingTapActionAtRuntimeAffectsNextTap() {
+        let h = Harness()
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.controller.actionButtonUp()
+        h.controller.settings.tapAction = .appExpose
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.controller.actionButtonUp()
+        #expect(h.output.steps == [.missionControl, .appExpose])
+    }
+
+    @Test func passThroughFlagResetsOnNextButtonDown() {
+        let h = Harness(settings: .defaults.with { $0.tapAction = .passThrough })
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.controller.actionButtonUp()
+        #expect(h.controller.lastTapWasPassThrough)
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        #expect(h.controller.lastTapWasPassThrough == false)
+        h.controller.settings.tapAction = .none
+        h.controller.actionButtonUp()
+        #expect(h.controller.lastTapWasPassThrough == false)
+    }
+
+    @Test func changingActionButtonIsAccepted() {
+        let h = Harness()
+        h.controller.settings.actionButton = 3
+        #expect(h.controller.settings.actionButton == 3)
+    }
+}
