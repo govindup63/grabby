@@ -10,6 +10,9 @@ final class ButtonTap: @unchecked Sendable {
     private let lock = NSLock()
     private var _actionButton: Int?
 
+    /// Set when a down was let through because another button was held; the matching up passes too.
+    private var passingThroughUntilUp = false
+
     var onDown: (@Sendable (CGPoint) -> Void)?
     var onUp: (@Sendable () -> Void)?
 
@@ -72,9 +75,22 @@ final class ButtonTap: @unchecked Sendable {
         let button = Int(event.getIntegerValueField(.mouseEventButtonNumber))
         guard let action = actionButton, button == action else { return Unmanaged.passUnretained(event) }
         if type == .otherMouseDown {
+            // Never start a gesture on top of a live left or right button drag: injecting a swipe into
+            // a drag-and-drop session can leave the dragged item stuck to the cursor.
+            if CGEventSource.buttonState(.combinedSessionState, button: .left)
+                || CGEventSource.buttonState(.combinedSessionState, button: .right) {
+                passingThroughUntilUp = true
+                Trace.log("button \(button) down ignored: another button is held")
+                return Unmanaged.passUnretained(event)
+            }
+            passingThroughUntilUp = false
             Log.tap.debug("ButtonTap: action button \(button) down")
             onDown?(event.location)
         } else {
+            if passingThroughUntilUp {
+                passingThroughUntilUp = false
+                return Unmanaged.passUnretained(event)
+            }
             Log.tap.debug("ButtonTap: action button \(button) up")
             onUp?()
         }

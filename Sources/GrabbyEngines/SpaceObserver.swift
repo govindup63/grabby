@@ -26,10 +26,29 @@ public final class SpaceObserver: SpaceReader, @unchecked Sendable {
         guard let array = copy(cid())?.takeRetainedValue() as? [[String: Any]] else { return 1 }
         for entry in array {
             if let id = entry["Display Identifier"] as? String, id == uuid || (id == "Main" && display == CGMainDisplayID()) {
-                return max(1, (entry["Spaces"] as? [Any])?.count ?? 1)
+                let n = max(1, (entry["Spaces"] as? [Any])?.count ?? 1)
+                Trace.log("spaces display=\(id) count=\(n)")
+                return n
             }
         }
+        Trace.log("spaces no match for display \(uuid); identifiers=\(array.compactMap { $0["Display Identifier"] as? String })")
         return 1
+    }
+
+    /// Human-readable dump of what macOS reports, for the probe.
+    public func describeDisplays() -> String {
+        guard let cid = api.CGSMainConnectionID, let copy = api.CGSCopyManagedDisplaySpaces,
+              let array = copy(cid())?.takeRetainedValue() as? [[String: Any]] else { return "unavailable" }
+        var out = "pointer display: \(displayUnderPointer()) main: \(CGMainDisplayID()) bounds: \(CGDisplayBounds(displayUnderPointer()))\n"
+        if let u = CGDisplayCreateUUIDFromDisplayID(displayUnderPointer())?.takeRetainedValue() {
+            out += "pointer display uuid: \(CFUUIDCreateString(nil, u) as String)\n"
+        }
+        for entry in array {
+            let id = entry["Display Identifier"] as? String ?? "?"
+            let spaces = (entry["Spaces"] as? [[String: Any]]) ?? []
+            out += "display \(id): \(spaces.count) spaces, current=\((entry["Current Space"] as? [String: Any])?["id64"] ?? "?")\n"
+        }
+        return out
     }
 
     public func screenSize() -> Size {

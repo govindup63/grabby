@@ -50,6 +50,7 @@ public final class DockSwipeEngine: @unchecked Sendable {
             return false
         }
         event.post(tap: .cgSessionEventTap)
+        Trace.log("dockswipe \(axis == .horizontal ? "h" : "v") phase=\(phase.bits) progress=\(String(format: "%.4f", progress)) exitSpeed=\(String(format: "%.3f", exitSpeed))")
         Log.engine.debug("DockSwipeEngine: \(axis == .horizontal ? "h" : "v") phase=\(phase.bits) progress=\(progress, format: .fixed(precision: 4))")
 
         if phase == .ended || phase == .cancelled {

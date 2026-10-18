@@ -11,6 +11,8 @@ public final class GestureController: @unchecked Sendable {
     public private(set) var lastTapWasPassThrough = false
     /// True after a smooth gesture ended normally, until `verifySmoothGesture` is called.
     public var awaitingVerification: Bool { pendingVerification != nil }
+    /// Debug hook; the app routes it to its trace file.
+    public var onTrace: ((String) -> Void)?
 
     private let smoothAvailable: Bool
     private let clock: any GrabbyClock
@@ -142,6 +144,7 @@ public final class GestureController: @unchecked Sendable {
                                              spaceCount: spaces.spaceCount(onDisplayUnderPointer: true),
                                              naturalDirection: userNaturalDirection != systemNaturalDirection)
             var coalescer = EventCoalescer(clock: clock)
+            onTrace?("begin axis=\(axis) distance=\(distance) screen=\(spaces.screenSize()) spaces=\(spaces.spaceCount(onDisplayUnderPointer: true)) oneSpace=\(scaler.offsetForOneSpace)")
             let sent = coalescer.began(progress: progress(for: distance, axis: axis, scaler: scaler))
             spaceBefore = spaces.activeSpace()
             engine = .smooth(scaler, coalescer, axis)
@@ -160,6 +163,7 @@ public final class GestureController: @unchecked Sendable {
 
     private func change(_ delta: Double) {
         dragDistance += delta
+        onTrace?("move delta=\(delta) total=\(dragDistance)")
         switch engine {
         case .smooth(let scaler, var coalescer, let axis):
             let sent = coalescer.changed(delta: progress(for: delta, axis: axis, scaler: scaler))

@@ -15,6 +15,7 @@ struct Options {
     var repeatCount = 1
     var json = false
     var hotkey: StepCommand?
+    var spacesInfo = false
 }
 
 func usage() -> Never {
@@ -33,6 +34,7 @@ func parse(_ args: [String]) -> Options {
     while i < args.count {
         switch args[i] {
         case "--symbols": o.symbols = true
+        case "--spaces": o.spacesInfo = true
         case "--json": o.json = true
         case "--direction":
             i += 1
@@ -71,6 +73,11 @@ if options.symbols {
         if !present { missing += 1 }
     }
     exit(missing == 0 ? 0 : 2)
+}
+
+if options.spacesInfo {
+    print(SpaceObserver(api: api).describeDisplays())
+    exit(0)
 }
 
 guard CGPreflightPostEventAccess() else {
