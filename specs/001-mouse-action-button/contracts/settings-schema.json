@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pixelstwo.com/grabby/settings.schema.json",
+  "title": "Grabby settings",
+  "description": "Persisted at ~/Library/Application Support/Grabby/settings.json. Unknown keys are ignored; missing keys take defaults.",
+  "type": "object",
+  "required": ["schemaVersion"],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "actionButton": {
+      "type": ["integer", "null"],
+      "minimum": 2,
+      "maximum": 31,
+      "default": null,
+      "description": "CoreGraphics button number. 0 (left) and 1 (right) are never valid. null means not configured."
+    },
+    "switchingStyle": {
+      "type": "string",
+      "enum": ["smooth", "keyboard"],
+      "default": "keyboard"
+    },
+    "dragDownAction": {
+      "type": "string",
+      "enum": ["appExpose", "showDesktop", "none"],
+      "default": "appExpose"
+    },
+    "tapAction": {
+      "type": "string",
+      "enum": ["missionControl", "appExpose", "showDesktop", "none", "passThrough"],
+      "default": "missionControl"
+    },
+    "naturalDirection": {
+      "type": ["boolean", "null"],
+      "default": null,
+      "description": "null follows the system natural scrolling setting at launch."
+    },
+    "pinPointer": { "type": "boolean", "default": true },
+    "launchAtLogin": { "type": "boolean", "default": false }
+  },
+  "examples": [
+    {
+      "schemaVersion": 1,
+      "actionButton": 4,
+      "switchingStyle": "smooth",
+      "dragDownAction": "appExpose",
+      "tapAction": "missionControl",
+      "naturalDirection": null,
+      "pinPointer": true,
+      "launchAtLogin": true
+    }
+  ]
+}
