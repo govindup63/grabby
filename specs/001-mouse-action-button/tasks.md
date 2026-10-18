@@ -98,7 +98,7 @@ exits 0. Keyboard style for this story is exercised through US4.
 - [X] T032 [US1] Create `Sources/GrabbyApp/GestureOutputAdapter.swift` implementing `GestureOutput` by delegating dock swipe calls to `DockSwipeEngine` and `perform` to `HotkeyEngine`, reporting a hard error back to the controller through a closure
 - [X] T033 [US1] Wire it in `Sources/GrabbyApp/AppDelegate.swift`: construct `GestureController` with `SpaceObserver`, the adapter, `MoveTap` as `PointerPin` (set/clear `pinOrigin`), a `UserNotifier` stub, and a monotonic `Clock`; `ButtonTap.onDown` enables MoveTap and calls `actionButtonDown(at:)`, `onUp` calls `actionButtonUp()` and disables MoveTap; `MoveTap.onMove` calls `pointerMoved`; `applicationWillTerminate` calls `cancelGesture()`; log every gesture event at debug level
 - [X] T034 [US1] Implement `Sources/GrabbyProbe/main.swift` per contracts/grabby-probe-cli.md: `--symbols`, `--direction`, `--repeat`, `--json`, `--hotkey`, exit codes 0/1/2/64, sharing `DockSwipeEngine`, `HotkeyEngine` and `SpaceObserver` by moving those three files into a new internal target `GrabbyEngines` (update `Package.swift` so GrabbyApp and GrabbyProbe both depend on it)
-- [ ] T035 [US1] Run `swift test`, then `swift run grabby-probe --symbols` and `swift run grabby-probe --repeat 6`, then quickstart.md steps 11, 12, 13, 17, 18 with `settings.json` hand-edited; record results in the commit message
+- [X] T035 [US1] Run `swift test`, then `swift run grabby-probe --symbols` and `swift run grabby-probe --repeat 6`, then quickstart.md steps 11, 12, 13, 17, 18 with `settings.json` hand-edited; record results in the commit message
 
 **Checkpoint**: desktops slide under the pointer with the side button held; Mission Control opens on drag up; probe exits 0.
 
@@ -126,7 +126,7 @@ settings.
 - [X] T042 [US2] Create `Sources/GrabbyApp/SettingsWindowController.swift` hosting `SettingsView` in an `NSWindow` (`NSHostingController`), opened from the status item menu, `NSApp.activate` on open, single instance
 - [X] T043 [US2] Implement pass-through in `Sources/GrabbyApp/AppDelegate.swift`: when `controller.lastTapWasPassThrough` is true after `actionButtonUp`, post `otherMouseDown` then `otherMouseUp` for the action button at the current location on the shared tagged source (ButtonTap ignores them via `isOwnEvent`)
 - [X] T044 [US2] Apply `naturalDirection nil` at launch in `AppDelegate.swift`: read `com.apple.swipescrolldirection` from `UserDefaults.standard` (default true) and pass the resolved Bool to the controller without writing it back to settings
-- [ ] T045 [US2] Run `swift test`, then quickstart.md steps 3, 4, 5, 15, 16 and a relaunch check; record results
+- [X] T045 [US2] Run `swift test`, then quickstart.md steps 3, 4, 5, 15, 16 and a relaunch check; record results
 
 **Checkpoint**: the button is chosen by pressing it; tap and drag-down actions configurable; settings survive relaunch.
 
@@ -150,7 +150,7 @@ revocation, and conflict notices for BetterMouse and Logitech G HUB.
 - [X] T049 [US3] Create `Sources/GrabbyApp/OnboardingView.swift` (SwiftUI): explains Accessibility access, "Open System Settings" button calling `Permissions.openAccessibilityPane()`, and a line "Grabby will start working as soon as access is granted"
 - [X] T050 [US3] Update `Sources/GrabbyApp/AppDelegate.swift`: on launch without access show the onboarding window and start `Permissions.startPolling`; on grant create the taps, close onboarding, update the status line to "Grabby is working"; on revocation disable both taps, call `controller.cancelGesture()`, set the status line to "Needs Accessibility access" and reopen onboarding; status item menu status line reflects the state
 - [X] T051 [US3] Wire the conflicts box in `Sources/GrabbyApp/SettingsView.swift` to `ConflictDetector` output, hidden when empty
-- [ ] T052 [US3] Run `swift test`, then quickstart.md steps 1, 2, 20, 23; record results
+- [X] T052 [US3] Run `swift test`, then quickstart.md steps 1, 2, 20, 23; record results
 
 **Checkpoint**: first launch guides the user to grant access and the app starts working without relaunch; revocation is safe; conflicts are named.
 
@@ -176,8 +176,8 @@ notice.
 - [X] T057 [P] [US4] Implement `Sources/GrabbyCore/FallbackDecider.swift` until T054 passes (`stickyAfter 2`)
 - [X] T058 [US4] Update `Sources/GrabbyCore/GestureController.swift` until T055 passes: keyboard path through `DiscreteStepper`; `verifySmoothGesture` runs `FallbackDecider`, performs the catch-up step, updates `consecutiveFailures`, sets `stickyFallback`, calls `notifier.showFallbackNotice()` once; `reportHardError()` entry point used by the adapter
 - [X] T059 [US4] Update `Sources/GrabbyApp/AppDelegate.swift`: after a smooth gesture ends, schedule `controller.verifySmoothGesture(spaceAfter: spaces.activeSpace())` 400 ms later on the main queue; implement `UserNotifier` with a status item menu line "Smooth switching failed, using keyboard shortcuts until relaunch" plus an `NSUserNotification`-free approach: a transient `NSAlert`-less menu bar title change for 5 s (no notification permission required)
-- [ ] T060 [US4] Run `swift test`, then quickstart.md steps 6, 7, 8, 9, 10 in Keyboard style and step 14 with `GRABBY_FAKE_SMOOTH_FAILURE=1`; record results
-- [ ] T061 [US4] If `swift run grabby-probe --repeat 6` exits 0 on this machine, flip `Settings.defaults.switchingStyle` to `.smooth` in `Sources/GrabbyCore/Settings.swift`, update the expectation in `Tests/GrabbyCoreTests/SettingsTests.swift` first (see it fail), then the default, and update `contracts/settings-schema.json` `default` to `"smooth"`
+- [X] T060 [US4] Run `swift test`, then quickstart.md steps 6, 7, 8, 9, 10 in Keyboard style and step 14 with `GRABBY_FAKE_SMOOTH_FAILURE=1`; record results
+- [X] T061 [US4] If `swift run grabby-probe --repeat 6` exits 0 on this machine, flip `Settings.defaults.switchingStyle` to `.smooth` in `Sources/GrabbyCore/Settings.swift`, update the expectation in `Tests/GrabbyCoreTests/SettingsTests.swift` first (see it fail), then the default, and update `contracts/settings-schema.json` `default` to `"smooth"`
 
 **Checkpoint**: both styles work; a dead smooth path never leaves a dead button.
 
@@ -189,10 +189,10 @@ notice.
 
 **Independent Test**: quickstart.md steps 21, 22.
 
-- [ ] T062 [US5] Create `Sources/GrabbyApp/LaunchAtLogin.swift` wrapping `SMAppService.mainApp`: `isEnabled`, `setEnabled(_:) throws`, and a `status` string for the UI; log and surface the error when the app is not running from a signed bundle (SwiftPM `swift run` case)
-- [ ] T063 [US5] Wire the toggle in `Sources/GrabbyApp/SettingsView.swift` to `LaunchAtLogin`, mirror the result into `settings.launchAtLogin`, and show the error text inline when enabling fails
-- [ ] T064 [US5] Measure idle cost per quickstart.md step 21 with the bundled release build; if CPU exceeds 1 percent, confirm `MoveTap` is disabled at idle (`CGEventTapIsEnabled`) and that `ButtonTap`'s mask excludes left and right; record the Activity Monitor numbers
-- [ ] T065 [US5] Run quickstart.md step 22 (log out and in); record the result
+- [X] T062 [US5] Create `Sources/GrabbyApp/LaunchAtLogin.swift` wrapping `SMAppService.mainApp`: `isEnabled`, `setEnabled(_:) throws`, and a `status` string for the UI; log and surface the error when the app is not running from a signed bundle (SwiftPM `swift run` case)
+- [X] T063 [US5] Wire the toggle in `Sources/GrabbyApp/SettingsView.swift` to `LaunchAtLogin`, mirror the result into `settings.launchAtLogin`, and show the error text inline when enabling fails
+- [X] T064 [US5] Measure idle cost per quickstart.md step 21 with the bundled release build; if CPU exceeds 1 percent, confirm `MoveTap` is disabled at idle (`CGEventTapIsEnabled`) and that `ButtonTap`'s mask excludes left and right; record the Activity Monitor numbers
+- [ ] T065 [US5] Run quickstart.md step 22 (log out and in); record the result (not run: needs a logout)
 
 **Checkpoint**: all five stories pass their independent tests.
 
@@ -200,11 +200,11 @@ notice.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T066 [P] Add `Tests/GrabbyCoreTests/SettingsStoreFileTests.swift` covering the app's real read/write closures factored into `GrabbyCore` as `SettingsStore.fileBacked(url:)` using a temporary directory: creates the directory, writes, reads back, renames an undecodable file to `settings.json.broken`
-- [ ] T067 [P] Remove `Tests/GrabbyCoreTests/SmokeTests.swift` and any placeholder left from T002
-- [ ] T068 Review every file in `Sources/GrabbyApp` and `Sources/GrabbyEngines` for private API use outside `GrabbyPrivate` symbol resolution (grep for `SLEvent`, `CGS`, `IOHIDEvent` and `dlsym`); move any stray declaration into `Sources/GrabbyPrivate`
-- [ ] T069 Run the full quickstart.md checklist (steps 1 to 23) on the bundled release build and record the outcome of every step in `specs/001-mouse-action-button/quickstart-results.md`
-- [ ] T070 Initialize the git repository if the user wants history (`git init`, first signed commit of the package and specs); the user's global rules require `git commit -s` and no AI attribution lines
+- [X] T066 [P] Add `Tests/GrabbyCoreTests/SettingsStoreFileTests.swift` covering the app's real read/write closures factored into `GrabbyCore` as `SettingsStore.fileBacked(url:)` using a temporary directory: creates the directory, writes, reads back, renames an undecodable file to `settings.json.broken`
+- [X] T067 [P] Remove `Tests/GrabbyCoreTests/SmokeTests.swift` and any placeholder left from T002
+- [X] T068 Review every file in `Sources/GrabbyApp` and `Sources/GrabbyEngines` for private API use outside `GrabbyPrivate` symbol resolution (grep for `SLEvent`, `CGS`, `IOHIDEvent` and `dlsym`); move any stray declaration into `Sources/GrabbyPrivate`
+- [ ] T069 Run the full quickstart.md checklist (partially run by hand during the session; see spec Amendments for behaviour that changed since the checklist was written) (steps 1 to 23) on the bundled release build and record the outcome of every step in `specs/001-mouse-action-button/quickstart-results.md`
+- [X] T070 Initialize the git repository if the user wants history (`git init`, first signed commit of the package and specs); the user's global rules require `git commit -s` and no AI attribution lines
 
 ---
 

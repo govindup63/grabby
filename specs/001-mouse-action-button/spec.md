@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-18
 
-**Status**: Draft
+**Status**: Implemented (amended 2026-10-18, see Amendments)
 
 **Input**: User description: "Grabby: macOS menu bar app that turns one spare mouse button into an action button. Hold the action button and drag left/right to switch between desktops (Spaces) following the pointer like a trackpad three-finger swipe; drag up opens Mission Control; drag down is configurable (App Expose, Show Desktop, nothing). Tap without dragging runs a configurable tap action. The action button is chosen by pressing it in a learn step (left and right buttons are never allowed). Switching style is Smooth (synthetic trackpad gesture) or Keyboard shortcut, with automatic fallback to the keyboard path when the smooth path fails. Optional pointer pinning during drag, launch at login, Accessibility permission onboarding, conflict warnings for BetterMouse and Logitech G HUB. Full design with research is in docs/superpowers/specs/2026-10-18-grabby-design.md."
 
@@ -281,3 +281,32 @@ under 1 percent in Activity Monitor.
   style once verified on the user's machine, Keyboard style until then.
 - Scrolling, pointer acceleration, per-app rules and multiple profiles are out of
   scope.
+
+## Amendments (2026-10-18, after hands-on testing)
+
+The following supersede the matching requirements above. They came from recording real
+trackpad Dock Swipe events on macOS 27 and from the user's testing.
+
+- Release semantics (FR-004, FR-005, FR-011 to FR-013): the Dock decides whether a
+  release completes or slides back from the release position and velocity, exactly as
+  with a trackpad. Grabby always reports "ended" with the measured hand velocity scaled
+  by the Throw setting (0 to 1, default 0.35). The keyboard style is no longer a user
+  choice; it remains only as the fallback for hard API errors (two in a row make it
+  sticky for the session). No silent-failure detection.
+- Scale and direction (FR-004): one screen width plus 63 points of pointer travel is one
+  desktop, whatever the Space count; leftward motion is negative progress, as a finger
+  is. One progress update per frame of the display under the pointer.
+- Tap (FR-008): default is Nothing. Mission Control, App Expose, Show Desktop and pass
+  the click through remain selectable.
+- Drag down (FR-007): closes Mission Control when it is open (detected from the Dock's
+  full-display windows); otherwise nothing. The drag-down picker is removed.
+- Pointer pinning (FR-015): removed. The pointer always travels with the hand.
+- New: hold plus left click triggers the system area screenshot (symbolic hotkey 30);
+  hold plus right click opens the screenshot and recording panel (184). The click is
+  swallowed. Only the first click in a hold fires, and it cancels any drag in progress.
+- New safety rule (FR-014 family): if the left or right button is already down when the
+  action button is pressed, Grabby lets the action button through untouched, down and
+  up, so it can never interfere with a drag-and-drop session.
+- Settings window: status, action button with learn step, Direction (follow system,
+  natural, reversed), Throw, tap action, two fixed rows describing the hold-click
+  actions, launch at login, conflicts. Nothing else.
