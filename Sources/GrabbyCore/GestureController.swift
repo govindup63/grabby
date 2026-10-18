@@ -17,11 +17,13 @@ public final class GestureController: @unchecked Sendable {
     private let output: any GestureOutput
     private let spaces: any SpaceReader
     private let pointer: any PointerPin
+    private let windows: any WindowMover
     private let notifier: any UserNotifier
 
     private enum Engine {
         case smooth(SwipeProgressScaler, EventCoalescer, Axis)
         case keyboard(DiscreteStepper)
+        case window
         case none
     }
 
@@ -39,13 +41,14 @@ public final class GestureController: @unchecked Sendable {
 
     public init(settings: Settings, smoothAvailable: Bool, clock: any GrabbyClock,
                 output: any GestureOutput, spaces: any SpaceReader,
-                pointer: any PointerPin, notifier: any UserNotifier) {
+                pointer: any PointerPin, windows: any WindowMover, notifier: any UserNotifier) {
         self.settings = settings
         self.smoothAvailable = smoothAvailable
         self.clock = clock
         self.output = output
         self.spaces = spaces
         self.pointer = pointer
+        self.windows = windows
         self.notifier = notifier
     }
 
@@ -60,6 +63,11 @@ public final class GestureController: @unchecked Sendable {
     }
 
     public func pointerMoved(dx: Double, dy: Double) {
+        if case .window = engine {
+            _ = recognizer.move(dx: dx, dy: dy)
+            windows.moveGrabbedWindow(dx: dx, dy: dy)
+            return
+        }
         handle(recognizer.move(dx: dx, dy: dy))
     }
 
@@ -128,6 +136,10 @@ public final class GestureController: @unchecked Sendable {
     }
 
     private func begin(_ axis: Axis) {
+        if settings.holdAction == .moveWindow {
+            beginWindowDrag()
+            return
+        }
         let distance = recognizer.distance
         dragAxis = axis
         dragDistance = distance
@@ -158,6 +170,17 @@ public final class GestureController: @unchecked Sendable {
         }
     }
 
+    /// Three-finger-drag feel: pick up the window under the pointer and move it by every delta from now on.
+    private func beginWindowDrag() {
+        guard windows.grabWindow(at: origin) else {
+            engine = .none
+            return
+        }
+        engine = .window
+        let offset = recognizer.offset
+        windows.moveGrabbedWindow(dx: offset.x, dy: offset.y)
+    }
+
     private func change(_ delta: Double) {
         dragDistance += delta
         switch engine {
@@ -169,12 +192,17 @@ public final class GestureController: @unchecked Sendable {
             let steps = stepper.move(delta: delta)
             engine = .keyboard(stepper)
             steps.forEach(output.perform)
-        case .none:
+        case .window, .none:
             break
         }
     }
 
     private func end(cancel: Bool) {
+        if case .window = engine {
+            windows.releaseWindow()
+            engine = .none
+            return
+        }
         if case .smooth(_, let coalescer, let axis) = engine {
             let offset = coalescer.flushForEnd()
             let speed = EndPhaseDecider.exitSpeed(lastDelta: coalescer.lastDelta)

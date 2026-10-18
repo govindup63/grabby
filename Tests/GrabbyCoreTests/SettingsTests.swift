@@ -7,6 +7,7 @@ import Testing
         let s = Settings.defaults
         #expect(s.schemaVersion == 1)
         #expect(s.actionButton == nil)
+        #expect(s.holdAction == .moveWindow)
         #expect(s.switchingStyle == .keyboard)
         #expect(s.dragDownAction == .appExpose)
         #expect(s.tapAction == .missionControl)
@@ -19,6 +20,7 @@ import Testing
         var s = Settings.defaults
         s.actionButton = 4
         s.switchingStyle = .smooth
+        s.holdAction = .switchDesktops
         s.tapAction = .passThrough
         s.naturalDirection = false
         let data = try JSONEncoder().encode(s)
@@ -52,6 +54,7 @@ import Testing
         let json = #"{"schemaVersion":1,"tapAction":"none"}"#
         let s = try JSONDecoder().decode(Settings.self, from: Data(json.utf8))
         #expect(s.tapAction == .none)
+        #expect(s.holdAction == .moveWindow)
         #expect(s.dragDownAction == .appExpose)
         #expect(s.pinPointer == true)
         #expect(s.switchingStyle == .keyboard)

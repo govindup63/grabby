@@ -8,6 +8,14 @@ public enum StepCommand: Sendable, Equatable {
     case moveSpaceLeft, moveSpaceRight, missionControl, appExpose, showDesktop
 }
 
+/// What holding the action button and moving the mouse does.
+public enum HoldAction: String, Codable, Sendable {
+    /// Pick up the window under the pointer and move it, like three-finger drag on a trackpad.
+    case moveWindow
+    /// Slide between desktops and open Mission Control, like a three-finger swipe.
+    case switchDesktops
+}
+
 public enum SwitchingStyle: String, Codable, Sendable {
     case smooth, keyboard
 }
@@ -60,6 +68,13 @@ public protocol SpaceReader: AnyObject {
 public protocol PointerPin: AnyObject {
     func pin(at origin: Point)
     func unpin()
+}
+
+public protocol WindowMover: AnyObject {
+    /// Returns false when there is no movable window under the pointer.
+    func grabWindow(at point: Point) -> Bool
+    func moveGrabbedWindow(dx: Double, dy: Double)
+    func releaseWindow()
 }
 
 public protocol UserNotifier: AnyObject {

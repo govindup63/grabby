@@ -14,7 +14,7 @@ import Testing
                       (TapAction.appExpose, [StepCommand.appExpose]),
                       (TapAction.showDesktop, [StepCommand.showDesktop])])
     func tapRunsConfiguredAction(action: TapAction, expected: [StepCommand]) {
-        let h = Harness(settings: .defaults.with { $0.tapAction = action })
+        let h = Harness(settings: .defaults.with { $0.tapAction = action; $0.holdAction = .switchDesktops })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.controller.actionButtonUp()
         #expect(h.output.steps == expected)
@@ -22,7 +22,7 @@ import Testing
     }
 
     @Test func passThroughTapIsFlaggedAndPerformsNothing() {
-        let h = Harness(settings: .defaults.with { $0.tapAction = .passThrough })
+        let h = Harness(settings: .defaults.with { $0.tapAction = .passThrough; $0.holdAction = .switchDesktops })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.controller.actionButtonUp()
         #expect(h.output.calls.isEmpty)
@@ -31,7 +31,7 @@ import Testing
 }
 
 @Suite struct GestureControllerSmoothTests {
-    let smooth = Settings.defaults.with { $0.switchingStyle = .smooth }
+    let smooth = Settings.defaults.with { $0.switchingStyle = .smooth; $0.holdAction = .switchDesktops }
 
     @Test func horizontalDragBeginsChangesEnds() {
         let h = Harness(settings: smooth)
@@ -165,7 +165,7 @@ import Testing
     }
 
     @Test func passThroughFlagResetsOnNextButtonDown() {
-        let h = Harness(settings: .defaults.with { $0.tapAction = .passThrough })
+        let h = Harness(settings: .defaults.with { $0.tapAction = .passThrough; $0.holdAction = .switchDesktops })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.controller.actionButtonUp()
         #expect(h.controller.lastTapWasPassThrough)
@@ -184,10 +184,10 @@ import Testing
 }
 
 @Suite struct GestureControllerKeyboardAndFallbackTests {
-    let smooth = Settings.defaults.with { $0.switchingStyle = .smooth }
+    let smooth = Settings.defaults.with { $0.switchingStyle = .smooth; $0.holdAction = .switchDesktops }
 
     @Test func keyboardStyleStepsAt60And260WithoutDockSwipes() {
-        let h = Harness(settings: .defaults.with { $0.switchingStyle = .keyboard })
+        let h = Harness(settings: .defaults.with { $0.switchingStyle = .keyboard; $0.holdAction = .switchDesktops })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.drag(dx: -60, dy: 0)
         #expect(h.output.steps == [.moveSpaceRight])
@@ -200,7 +200,7 @@ import Testing
     }
 
     @Test func keyboardStyleFollowsNaturalDirectionSetting() {
-        let h = Harness(settings: .defaults.with { $0.switchingStyle = .keyboard; $0.naturalDirection = false })
+        let h = Harness(settings: .defaults.with { $0.switchingStyle = .keyboard; $0.naturalDirection = false; $0.holdAction = .switchDesktops })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.drag(dx: 60, dy: 0)
         #expect(h.output.steps == [.moveSpaceRight])
@@ -273,5 +273,64 @@ import Testing
         h.controller.verifySmoothGesture(spaceAfter: 99)
         #expect(h.output.calls.isEmpty)
         #expect(h.controller.stickyFallback == false)
+    }
+}
+
+
+@Suite struct GestureControllerWindowDragTests {
+    let window = Settings.defaults  // holdAction defaults to .moveWindow
+
+    @Test func tapStillRunsTapActionInWindowMode() {
+        let h = Harness(settings: window)
+        h.controller.actionButtonDown(at: Point(x: 10, y: 10))
+        h.controller.actionButtonUp()
+        #expect(h.output.steps == [.missionControl])
+        #expect(h.windows.calls.isEmpty)
+    }
+
+    @Test func dragGrabsWindowAtOriginAndMovesItInAnyDirection() {
+        let h = Harness(settings: window)
+        let origin = Point(x: 300, y: 200)
+        h.controller.actionButtonDown(at: origin)
+        h.controller.pointerMoved(dx: 5, dy: 5)      // under threshold, nothing yet
+        #expect(h.windows.calls.isEmpty)
+        h.controller.pointerMoved(dx: 5, dy: -1)     // crosses threshold: grab, then apply the offset so far
+        #expect(h.windows.calls == [.grab(origin), .move(10, 4)])
+        h.controller.pointerMoved(dx: -30, dy: 12)
+        h.controller.pointerMoved(dx: 2, dy: 40)
+        h.controller.actionButtonUp()
+        #expect(h.windows.calls == [.grab(origin), .move(10, 4), .move(-30, 12), .move(2, 40), .release])
+        #expect(h.output.calls.isEmpty)
+        #expect(h.pointer.pinned.isEmpty)
+    }
+
+    @Test func noWindowUnderPointerMeansNothingMoves() {
+        let h = Harness(settings: window)
+        h.windows.windowUnderPointer = false
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.controller.pointerMoved(dx: 20, dy: 0)
+        h.controller.pointerMoved(dx: 20, dy: 0)
+        h.controller.actionButtonUp()
+        #expect(h.windows.calls == [.grab(Point(x: 0, y: 0))])
+        #expect(h.output.calls.isEmpty)
+    }
+
+    @Test func cancelReleasesTheWindow() {
+        let h = Harness(settings: window)
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.controller.pointerMoved(dx: 20, dy: 0)
+        h.controller.cancelGesture()
+        #expect(h.windows.calls.last == .release)
+        h.controller.actionButtonUp()
+        #expect(h.windows.calls.filter { $0 == .release }.count == 1)
+    }
+
+    @Test func switchDesktopsModeNeverTouchesWindows() {
+        let h = Harness(settings: window.with { $0.holdAction = .switchDesktops; $0.switchingStyle = .keyboard })
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -60, dy: 0)
+        h.controller.actionButtonUp()
+        #expect(h.windows.calls.isEmpty)
+        #expect(h.output.steps == [.moveSpaceRight])
     }
 }

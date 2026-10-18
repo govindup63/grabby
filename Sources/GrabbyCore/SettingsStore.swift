@@ -25,4 +25,25 @@ public struct SettingsStore: Sendable {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try write(encoder.encode(settings))
     }
+
+    /// A store on disk. Creates the directory on save and moves an undecodable file aside as
+    /// `settings.json.broken` on load so defaults take over without losing the old file.
+    public static func fileBacked(url: URL) -> SettingsStore {
+        SettingsStore(
+            read: {
+                guard let data = try? Data(contentsOf: url) else { return nil }
+                if (try? JSONDecoder().decode(Settings.self, from: data)) == nil {
+                    let broken = url.appendingPathExtension("broken")
+                    try? FileManager.default.removeItem(at: broken)
+                    try? FileManager.default.moveItem(at: url, to: broken)
+                    return nil
+                }
+                return data
+            },
+            write: { data in
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try data.write(to: url, options: .atomic)
+            }
+        )
+    }
 }

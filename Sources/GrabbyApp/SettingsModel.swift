@@ -12,7 +12,10 @@ final class SettingsModel: ObservableObject {
     }
 
     @Published var settings: Settings {
-        didSet { persist() }
+        didSet {
+            if settings.launchAtLogin != oldValue.launchAtLogin { applyLaunchAtLogin() }
+            persist()
+        }
     }
     @Published var status = "Starting..."
     @Published var learnState: LearnState = .idle
@@ -62,6 +65,17 @@ final class SettingsModel: ObservableObject {
             onLearnEnd?()
         case .waiting, .finished:
             break
+        }
+    }
+
+    private func applyLaunchAtLogin() {
+        do {
+            try LaunchAtLogin.setEnabled(settings.launchAtLogin)
+            launchAtLoginError = nil
+            Log.settings.info("Launch at login set to \(self.settings.launchAtLogin): \(LaunchAtLogin.status)")
+        } catch {
+            launchAtLoginError = "Could not change launch at login: \(error.localizedDescription). \(LaunchAtLogin.status)."
+            Log.settings.error("Launch at login failed: \(String(describing: error))")
         }
     }
 

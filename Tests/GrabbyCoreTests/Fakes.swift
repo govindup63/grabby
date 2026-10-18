@@ -42,6 +42,18 @@ final class FakePointer: PointerPin {
     func unpin() { unpinCount += 1 }
 }
 
+final class FakeWindowMover: WindowMover {
+    enum Call: Equatable { case grab(Point), move(Double, Double), release }
+    var calls: [Call] = []
+    var windowUnderPointer = true
+    func grabWindow(at point: Point) -> Bool {
+        calls.append(.grab(point))
+        return windowUnderPointer
+    }
+    func moveGrabbedWindow(dx: Double, dy: Double) { calls.append(.move(dx, dy)) }
+    func releaseWindow() { calls.append(.release) }
+}
+
 final class FakeNotifier: UserNotifier {
     var notices = 0
     func showFallbackNotice() { notices += 1 }
@@ -53,11 +65,14 @@ struct Harness {
     let spaces = FakeSpaces()
     let pointer = FakePointer()
     let notifier = FakeNotifier()
+    let windows = FakeWindowMover()
     let controller: GestureController
 
-    init(settings: Settings = .defaults, smoothAvailable: Bool = true) {
+    /// Existing desktop-switching tests run with holdAction = .switchDesktops unless they say otherwise.
+    init(settings: Settings = .defaults.with { $0.holdAction = .switchDesktops }, smoothAvailable: Bool = true) {
         controller = GestureController(settings: settings, smoothAvailable: smoothAvailable, clock: clock,
-                                       output: output, spaces: spaces, pointer: pointer, notifier: notifier)
+                                       output: output, spaces: spaces, pointer: pointer, windows: windows,
+                                       notifier: notifier)
     }
 
     /// Moves the pointer and advances the clock past the coalescing interval.

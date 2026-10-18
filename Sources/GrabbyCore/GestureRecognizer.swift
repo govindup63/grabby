@@ -34,6 +34,9 @@ public struct GestureRecognizer: Sendable {
         return nil
     }
 
+    /// Raw accumulated offset since button down, both axes.
+    public var offset: Point { Point(x: offsetX, y: offsetY) }
+
     /// Signed sum of deltas along the locked axis (horizontal until locked).
     public var distance: Double {
         switch state {
@@ -61,14 +64,9 @@ public struct GestureRecognizer: Sendable {
             state = .dragging(axis)
             return [.dragBegan(axis)]
         case .dragging(let axis):
-            switch axis {
-            case .horizontal:
-                offsetX += dx
-                return [.dragChanged(dx)]
-            case .vertical:
-                offsetY += dy
-                return [.dragChanged(dy)]
-            }
+            offsetX += dx
+            offsetY += dy
+            return [.dragChanged(axis == .horizontal ? dx : dy)]
         }
     }
 
