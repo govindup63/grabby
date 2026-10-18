@@ -79,7 +79,7 @@ as mirrored in Mac Mouse Fix:
 | `kIOHIDEventFieldDockSwipeProgress` | `(23 << 16) \| 2` |
 | `kIOHIDEventFieldDockSwipeFlavor` | `(23 << 16) \| 5` |
 | `kIOHIDEventFieldVelocityX/Y/Z` | `(9 << 16) \| 0/1/2` |
-| `kIOHIDGestureFlavorDockPrimary` | 1 |
+| `kIOHIDGestureFlavorDockPrimary` | 3 (0 none, 1 and 2 are Notification Center) |
 | Motion: horizontal / vertical / pinch | 1 / 2 / 3 |
 | Phase bits: began / changed / ended / cancelled | 1 / 2 / 4 / 8 |
 | `kIOHIDEventEventOptionPhaseShift` | 24 (phase goes in the event options as `phase << 24`) |

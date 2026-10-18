@@ -76,3 +76,10 @@ const char *grabby_private_symbol_name(int index) {
     if (index < 0 || index >= GRABBY_PRIVATE_SYMBOL_COUNT) return "";
     return kSymbolNames[index];
 }
+
+void grabby_poke_hid_event(CGEventRef cgEvent, GrabbyHIDEventRef hidEvent) {
+    if (!cgEvent || !hidEvent) return;
+    CFRetain(hidEvent);
+    uint8_t *record = *(uint8_t **)((uint8_t *)cgEvent + 0x18);
+    *(GrabbyHIDEventRef *)(record + 0xd0) = hidEvent;
+}

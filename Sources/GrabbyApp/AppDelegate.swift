@@ -79,6 +79,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindow = SettingsWindowController(model: settingsModel)
         settingsWindow.onAppear = { [weak self] in self?.refreshConflicts() }
         statusItem.onOpenSettings = { [weak self] in self?.settingsWindow.show() }
+        statusItem.onExperiment = { [weak self] mode in
+            guard let self, let m = DockSwipeEngine.AttachMode(rawValue: mode) else { return }
+            let dock = self.dock!
+            let spaces = self.spaces!
+            // Give the menu time to close, then run off the main thread.
+            DispatchQueue.global(qos: .userInteractive).asyncAfter(deadline: .now() + 1.5) {
+                let scaler = SwipeProgressScaler(screen: spaces.screenSize(),
+                                                 spaceCount: spaces.spaceCount(onDisplayUnderPointer: true),
+                                                 naturalDirection: false)
+                dock.runSlideExperiment(oneSpace: scaler.offsetForOneSpace, mode: m)
+            }
+        }
         onboarding = OnboardingWindowController()
         conflictTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.refreshConflicts() }

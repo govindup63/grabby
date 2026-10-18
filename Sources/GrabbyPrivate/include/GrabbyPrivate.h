@@ -20,7 +20,7 @@
 #define GRABBY_HID_FIELD_VELOCITY_X     589824
 #define GRABBY_HID_FIELD_VELOCITY_Y     589825
 #define GRABBY_HID_FIELD_VELOCITY_Z     589826
-#define GRABBY_FLAVOR_DOCK_PRIMARY      1
+#define GRABBY_FLAVOR_DOCK_PRIMARY      3
 #define GRABBY_DOCK_SWIPE_HORIZONTAL    1
 #define GRABBY_DOCK_SWIPE_VERTICAL      2
 #define GRABBY_PHASE_BEGAN              1
@@ -71,6 +71,10 @@ struct grabby_private_api {
 };
 
 #define GRABBY_PRIVATE_SYMBOL_COUNT 12
+
+/// Attaches an IOHIDEvent to a CGEvent by writing the pointer where the window server reads it
+/// (Mac Mouse Fix's CGEventSetIOHIDEvent). Retains the event. Debug alternative to SLEventSetIOHIDEvent.
+void grabby_poke_hid_event(CGEventRef cgEvent, GrabbyHIDEventRef hidEvent);
 
 /// Resolves every symbol. Safe to call more than once. Never fails; check the pointers.
 struct grabby_private_api grabby_private_resolve(void);

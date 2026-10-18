@@ -5,6 +5,7 @@ final class StatusItemController {
     private let item: NSStatusItem
     private let statusLine = NSMenuItem(title: "Starting...", action: nil, keyEquivalent: "")
     var onOpenSettings: (() -> Void)?
+    var onExperiment: ((String) -> Void)?
 
     init() {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -16,6 +17,13 @@ final class StatusItemController {
         let settings = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
+        menu.addItem(.separator())
+        let expA = NSMenuItem(title: "Debug: slide test A (SkyLight)", action: #selector(runA), keyEquivalent: "")
+        expA.target = self
+        menu.addItem(expA)
+        let expB = NSMenuItem(title: "Debug: slide test B (poke)", action: #selector(runB), keyEquivalent: "")
+        expB.target = self
+        menu.addItem(expB)
         menu.addItem(.separator())
         let quit = NSMenuItem(title: "Quit Grabby", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quit)
@@ -35,6 +43,9 @@ final class StatusItemController {
             self?.item.length = NSStatusItem.squareLength
         }
     }
+
+    @objc private func runA() { onExperiment?("skyLight") }
+    @objc private func runB() { onExperiment?("poke") }
 
     @objc private func openSettings() {
         onOpenSettings?()
