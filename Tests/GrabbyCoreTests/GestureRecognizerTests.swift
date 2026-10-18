@@ -23,6 +23,14 @@ import Testing
         #expect(r.move(dx: 1, dy: 0) == [.dragBegan(.horizontal)])
     }
 
+    @Test func distanceIncludesMovementAccumulatedWhileUndecided() {
+        var r = GestureRecognizer()
+        _ = r.buttonDown()
+        _ = r.move(dx: 8, dy: 8)
+        _ = r.move(dx: 0, dy: 6)
+        #expect(r.distance == 14)
+    }
+
     @Test func largerComponentPicksAxis() {
         var h = GestureRecognizer()
         _ = h.buttonDown()
@@ -35,10 +43,24 @@ import Testing
         #expect(v.axis == .vertical)
     }
 
-    @Test func tieGoesHorizontal() {
+    @Test func ambiguousDirectionWaitsForClearDominance() {
         var r = GestureRecognizer()
         _ = r.buttonDown()
-        #expect(r.move(dx: 8, dy: 8) == [.dragBegan(.horizontal)])
+        #expect(r.move(dx: 8, dy: 8).isEmpty)          // past threshold but no clear axis yet
+        #expect(r.move(dx: 0, dy: 6) == [.dragBegan(.vertical)])  // 14 vs 8: vertical wins
+    }
+
+    @Test func aWobbleAtTheStartDoesNotLockTheWrongAxis() {
+        var r = GestureRecognizer()
+        _ = r.buttonDown()
+        #expect(r.move(dx: 3, dy: 4).isEmpty)                       // small wobble, under threshold
+        #expect(r.move(dx: 1, dy: -12) == [.dragBegan(.vertical)])  // 8 vertical vs 4 horizontal: clear
+    }
+
+    @Test func aLongAmbiguousMoveEventuallyLocksTheLargerAxis() {
+        var r = GestureRecognizer()
+        _ = r.buttonDown()
+        #expect(r.move(dx: 21, dy: 20) == [.dragBegan(.horizontal)])
     }
 
     @Test func afterLockOnlyLockedAxisIsReported() {

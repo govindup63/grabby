@@ -39,6 +39,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }()
     private var settingsWindowBuilt = false
     private var onboardingShown = false
+    private let inspector = GestureInspector()
+    private var inspectorStarted = false
     private lazy var onboarding = OnboardingWindowController()
     private var conflictTimer: Timer?
     /// Only ever touched on the tap thread after construction.
@@ -187,6 +189,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 tapsReady = buttonTap.create() && moveTap.create() && comboTap.create()
             }
             buttonTap.setEnabled(true)
+            if !inspectorStarted { inspectorStarted = inspector.start() }
             let text = tapsReady ? "Grabby is working" : "Could not start event taps"
             statusItem.setStatus(text)
             settingsModel.status = text

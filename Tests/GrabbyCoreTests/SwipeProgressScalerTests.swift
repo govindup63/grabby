@@ -23,10 +23,12 @@ import Testing
         #expect(abs(s.horizontalProgress(forDelta: screen.width + 63) + 1.0) < 1e-9)
     }
 
-    @Test func verticalScreenHeightIsOne() {
+    @Test func upwardMotionIsPositiveLikeATrackpadFingerAndScreenHeightIsOne() {
+        // Recorded on macOS 27: three fingers up (Mission Control) is positive progress.
         let s = SwipeProgressScaler(screen: screen, spaceCount: 2, naturalDirection: false)
-        #expect(abs(s.verticalProgress(forDelta: screen.height) - 1.0) < 1e-9)
+        #expect(abs(s.verticalProgress(forDelta: -screen.height) - 1.0) < 1e-9)
+        #expect(s.verticalProgress(forDelta: 100) < 0)
         let n = SwipeProgressScaler(screen: screen, spaceCount: 2, naturalDirection: true)
-        #expect(abs(n.verticalProgress(forDelta: screen.height) + 1.0) < 1e-9)
+        #expect(abs(n.verticalProgress(forDelta: -screen.height) + 1.0) < 1e-9)
     }
 }

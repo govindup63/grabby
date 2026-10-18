@@ -33,6 +33,10 @@ public final class SpaceObserver: SpaceReader, @unchecked Sendable {
                 return true
             }
         }
+        let dockWindows = list.filter { ($0[kCGWindowOwnerName as String] as? String) == "Dock" }
+            .compactMap { $0[kCGWindowBounds as String] as? [String: CGFloat] }
+            .map { "\(Int($0["Width"] ?? 0))x\(Int($0["Height"] ?? 0))" }
+        Trace.log("mission control not active; display \(Int(bounds.width))x\(Int(bounds.height)); dock windows: \(dockWindows)")
         return false
     }
 

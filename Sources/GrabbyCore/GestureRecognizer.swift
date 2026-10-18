@@ -11,6 +11,11 @@ public enum GestureEvent: Equatable, Sendable {
 /// Turns button down/up and raw deltas into tap and drag events. Pure; no timing.
 public struct GestureRecognizer: Sendable {
     public static let threshold: Double = 7
+    /// The winning axis must lead by this factor, so a sideways wobble at the start of a vertical
+    /// move does not lock the gesture horizontal.
+    public static let dominance: Double = 1.3
+    /// Past this much travel the larger axis wins even without clear dominance.
+    public static let decisionDistance: Double = 20
 
     private enum State: Equatable {
         case idle
@@ -59,8 +64,13 @@ public struct GestureRecognizer: Sendable {
         case .pressed:
             offsetX += dx
             offsetY += dy
-            guard max(abs(offsetX), abs(offsetY)) > GestureRecognizer.threshold else { return [] }
-            let axis: Axis = abs(offsetY) > abs(offsetX) ? .vertical : .horizontal
+            let ax = abs(offsetX), ay = abs(offsetY)
+            let larger = max(ax, ay), smaller = min(ax, ay)
+            guard larger > GestureRecognizer.threshold else { return [] }
+            guard larger >= smaller * GestureRecognizer.dominance || larger >= GestureRecognizer.decisionDistance else {
+                return []
+            }
+            let axis: Axis = ay > ax ? .vertical : .horizontal
             state = .dragging(axis)
             return [.dragBegan(axis)]
         case .dragging(let axis):

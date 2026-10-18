@@ -159,8 +159,8 @@ import Testing
         let h = Harness()
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.drag(dx: 0, dy: -10)
-        guard case .began(.vertical, let p)? = h.output.calls.first, p < 0 else {
-            Issue.record("expected upward vertical began, got \(h.output.calls)")
+        guard case .began(.vertical, let p)? = h.output.calls.first, p > 0 else {
+            Issue.record("expected upward vertical began (positive), got \(h.output.calls)")
             return
         }
         h.controller.actionButtonUp()
@@ -179,8 +179,8 @@ import Testing
         open.spaces.missionControlOpen = true
         open.controller.actionButtonDown(at: Point(x: 0, y: 0))
         open.drag(dx: 0, dy: 10)
-        guard case .began(.vertical, let p)? = open.output.calls.first, p > 0 else {
-            Issue.record("expected a downward vertical swipe, got \(open.output.calls)")
+        guard case .began(.vertical, let p)? = open.output.calls.first, p < 0 else {
+            Issue.record("expected a downward vertical swipe (negative), got \(open.output.calls)")
             return
         }
         open.controller.actionButtonUp()
