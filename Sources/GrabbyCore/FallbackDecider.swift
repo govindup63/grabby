@@ -55,6 +55,7 @@ public enum FallbackDecider {
         case .vertical:
             if o.progress < 0 { return .missionControl }
             switch o.dragDownAction {
+            case .exitMissionControl: return .missionControl
             case .appExpose: return .appExpose
             case .showDesktop: return .showDesktop
             case .none: return nil

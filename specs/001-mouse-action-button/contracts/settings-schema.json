@@ -22,13 +22,13 @@
     },
     "dragDownAction": {
       "type": "string",
-      "enum": ["appExpose", "showDesktop", "none"],
-      "default": "appExpose"
+      "enum": ["exitMissionControl", "appExpose", "showDesktop", "none"],
+      "default": "exitMissionControl"
     },
     "tapAction": {
       "type": "string",
       "enum": ["missionControl", "appExpose", "showDesktop", "none", "passThrough"],
-      "default": "missionControl"
+      "default": "none"
     },
     "naturalDirection": {
       "type": ["boolean", "null"],

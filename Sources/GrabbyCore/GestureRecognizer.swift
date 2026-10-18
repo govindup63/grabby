@@ -24,6 +24,9 @@ public struct GestureRecognizer: Sendable {
 
     public init() {}
 
+    /// True between button down and button up, whether or not a drag has started.
+    public var isHeld: Bool { state != .idle }
+
     public var isDragging: Bool {
         if case .dragging = state { return true }
         return false

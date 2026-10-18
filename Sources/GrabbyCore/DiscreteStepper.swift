@@ -32,6 +32,7 @@ public struct DiscreteStepper: Sendable {
             verticalFired = true
             if distance < 0 { return [.missionControl] }
             switch dragDownAction {
+            case .exitMissionControl: return [.missionControl]  // the hotkey toggles it closed
             case .appExpose: return [.appExpose]
             case .showDesktop: return [.showDesktop]
             case .none: return []

@@ -33,6 +33,8 @@ public final class HotkeyEngine: @unchecked Sendable {
         case .missionControl: return GRABBY_SHK_MISSION_CONTROL
         case .appExpose: return GRABBY_SHK_APP_EXPOSE
         case .showDesktop: return GRABBY_SHK_SHOW_DESKTOP
+        case .screenshotSelection: return GRABBY_SHK_SCREENSHOT_REGION
+        case .screenshotOptions: return GRABBY_SHK_SCREENSHOT_OPTIONS
         }
     }
 
@@ -100,6 +102,10 @@ public final class HotkeyEngine: @unchecked Sendable {
         case GRABBY_SHK_MISSION_CONTROL: postKey(virtualKey: 126, modifiers: control)
         case GRABBY_SHK_APP_EXPOSE: postKey(virtualKey: 125, modifiers: control)
         case GRABBY_SHK_SHOW_DESKTOP: postKey(virtualKey: 103, modifiers: 0)
+        case GRABBY_SHK_SCREENSHOT_REGION:
+            postKey(virtualKey: 21, modifiers: UInt32(CGEventFlags.maskCommand.rawValue | CGEventFlags.maskShift.rawValue))
+        case GRABBY_SHK_SCREENSHOT_OPTIONS:
+            postKey(virtualKey: 23, modifiers: UInt32(CGEventFlags.maskCommand.rawValue | CGEventFlags.maskShift.rawValue))
         default: break
         }
     }

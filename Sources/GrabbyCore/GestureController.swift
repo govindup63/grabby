@@ -35,6 +35,7 @@ public final class GestureController: @unchecked Sendable {
     private var dragAxis: Axis = .horizontal
     private var dragDistance: Double = 0
     private var hardErrorThisGesture = false
+    private var comboFired = false
     private var pendingVerification: (axis: Axis, progress: Double)?
     private var consecutiveFailures = 0
     private var noticeShown = false
@@ -57,8 +58,21 @@ public final class GestureController: @unchecked Sendable {
         self.origin = origin
         lastTapWasPassThrough = false
         hardErrorThisGesture = false
+        comboFired = false
         engine = .none
         handle(recognizer.buttonDown())
+    }
+
+    /// A left or right click while the action button is held. Returns true when consumed.
+    @discardableResult
+    public func comboClick(_ button: ComboButton) -> Bool {
+        guard recognizer.isHeld, !comboFired else { return false }
+        comboFired = true
+        if recognizer.isDragging {
+            handle(recognizer.cancel())
+        }
+        output.perform(button == .left ? .screenshotSelection : .screenshotOptions)
+        return true
     }
 
     public func pointerMoved(dx: Double, dy: Double) {
@@ -66,7 +80,9 @@ public final class GestureController: @unchecked Sendable {
     }
 
     public func actionButtonUp() {
-        handle(recognizer.buttonUp())
+        let events = recognizer.buttonUp()
+        if comboFired { return }  // the click already did the work; no tap action
+        handle(events)
     }
 
     public func cancelGesture() {
@@ -135,6 +151,11 @@ public final class GestureController: @unchecked Sendable {
         dragDistance = distance
         let down = axis == .vertical && distance > 0
         if down && settings.dragDownAction == .none {
+            engine = .none
+            return
+        }
+        if down && settings.dragDownAction == .exitMissionControl && !spaces.missionControlIsActive() {
+            onTrace?("drag down: Mission Control not open, nothing to do")
             engine = .none
             return
         }

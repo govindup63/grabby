@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let tapThread = TapThread()
     private(set) var buttonTap: ButtonTap!
     private(set) var moveTap: MoveTap!
+    private(set) var comboTap: ComboTap!
     private var statusItem: StatusItemController!
     private let permissions = Permissions()
     private var tapsReady = false
@@ -55,6 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = tapThread.runLoop
         buttonTap = ButtonTap(thread: tapThread)
         moveTap = MoveTap(thread: tapThread)
+        comboTap = ComboTap(thread: tapThread)
         buttonTap.actionButton = settings.actionButton
 
         spaces = SpaceObserver(api: privateAPI)
@@ -113,13 +115,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         if tapsReady {
-            tapThread.sync { [controller, moveTap] in
+            tapThread.sync { [controller, moveTap, comboTap] in
                 controller?.cancelGesture()
                 moveTap?.setEnabled(false)
+                comboTap?.setEnabled(false)
             }
         }
         buttonTap?.destroy()
         moveTap?.destroy()
+        comboTap?.destroy()
     }
 
     /// Settings changed in the UI: persist is done by the model; push to the taps and the controller.
@@ -134,9 +138,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func wireTaps() {
         let controller = self.controller!
         let moveTap = self.moveTap!
+        let comboTap = self.comboTap!
         buttonTap.onDown = { location in
             moveTap.setEnabled(true)
+            comboTap.setEnabled(true)
             controller.actionButtonDown(at: Point(x: location.x, y: location.y))
+        }
+        comboTap.onClick = { button in
+            controller.comboClick(button == .left ? .left : .right)
         }
         moveTap.onMove = { dx, dy in
             controller.pointerMoved(dx: dx, dy: dy)
@@ -146,6 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         buttonTap.onUp = { [weak self] in
             controller.actionButtonUp()
             moveTap.setEnabled(false)
+            comboTap.setEnabled(false)
             if controller.lastTapWasPassThrough, let button = controller.settings.actionButton {
                 self?.replayClick(button: button)
             }
@@ -176,7 +186,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hasAccess = granted
         if granted {
             if !tapsReady {
-                tapsReady = buttonTap.create() && moveTap.create()
+                tapsReady = buttonTap.create() && moveTap.create() && comboTap.create()
             }
             buttonTap.setEnabled(true)
             if !inspectorStarted { inspectorStarted = inspector.start() }
@@ -189,9 +199,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             buttonTap.setEnabled(false)
             if tapsReady {
-                tapThread.async { [controller, moveTap] in
+                tapThread.async { [controller, moveTap, comboTap] in
                     controller?.cancelGesture()
                     moveTap?.setEnabled(false)
+                    comboTap?.setEnabled(false)
                 }
             }
             statusItem.setStatus("Needs Accessibility access")

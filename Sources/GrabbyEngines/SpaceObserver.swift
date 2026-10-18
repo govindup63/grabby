@@ -13,6 +13,23 @@ public final class SpaceObserver: SpaceReader, @unchecked Sendable {
         self.api = api
     }
 
+    /// Mission Control puts up Dock-owned windows that cover the display; nothing else does.
+    public func missionControlIsActive() -> Bool {
+        guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else {
+            return false
+        }
+        let bounds = CGDisplayBounds(displayUnderPointer())
+        for w in list where (w[kCGWindowOwnerName as String] as? String) == "Dock" {
+            guard let b = w[kCGWindowBounds as String] as? [String: CGFloat],
+                  let width = b["Width"], let height = b["Height"] else { continue }
+            if width >= bounds.width * 0.9 && height >= bounds.height * 0.9 {
+                Trace.log("mission control active: Dock window \(width)x\(height) layer=\(w[kCGWindowLayer as String] ?? "?")")
+                return true
+            }
+        }
+        return false
+    }
+
     public func activeSpace() -> UInt64 {
         guard let cid = api.CGSMainConnectionID, let active = api.CGSGetActiveSpace else { return 0 }
         return active(cid())

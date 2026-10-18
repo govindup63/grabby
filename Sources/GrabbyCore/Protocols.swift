@@ -6,6 +6,15 @@ public enum Axis: Sendable, Equatable {
 
 public enum StepCommand: Sendable, Equatable {
     case moveSpaceLeft, moveSpaceRight, missionControl, appExpose, showDesktop
+    /// The system's area screenshot (what Command Shift 4 is bound to).
+    case screenshotSelection
+    /// The system's screenshot and recording panel (what Command Shift 5 is bound to).
+    case screenshotOptions
+}
+
+/// A left or right click made while the action button is held.
+public enum ComboButton: Sendable, Equatable {
+    case left, right
 }
 
 public enum SwitchingStyle: String, Codable, Sendable {
@@ -13,6 +22,8 @@ public enum SwitchingStyle: String, Codable, Sendable {
 }
 
 public enum DragDownAction: String, Codable, Sendable {
+    /// Close Mission Control if it is open, back to the app; otherwise do nothing.
+    case exitMissionControl
     case appExpose, showDesktop, none
 }
 
@@ -52,6 +63,7 @@ public protocol GestureOutput: AnyObject {
 }
 
 public protocol SpaceReader: AnyObject {
+    func missionControlIsActive() -> Bool
     func activeSpace() -> UInt64
     func spaceCount(onDisplayUnderPointer: Bool) -> Int
     func screenSize() -> Size

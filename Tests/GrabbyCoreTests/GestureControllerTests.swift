@@ -2,12 +2,11 @@ import Testing
 @testable import GrabbyCore
 
 @Suite struct GestureControllerTapTests {
-    @Test func tapRunsMissionControlByDefault() {
+    @Test func tapDoesNothingByDefault() {
         let h = Harness()
         h.controller.actionButtonDown(at: Point(x: 10, y: 10))
         h.controller.actionButtonUp()
-        #expect(h.output.steps == [.missionControl])
-        #expect(h.output.dockCalls.isEmpty)
+        #expect(h.output.calls.isEmpty)
     }
 
     @Test(arguments: [(TapAction.none, [StepCommand]()),
@@ -144,6 +143,39 @@ import Testing
         #expect(h.output.steps == [.showDesktop])
     }
 
+    @Test func verticalDownExitsMissionControlOnlyWhenItIsOpen() {
+        let closed = Harness(settings: smooth)
+        closed.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        closed.drag(dx: 0, dy: 10)
+        closed.drag(dx: 0, dy: 200)
+        closed.controller.actionButtonUp()
+        #expect(closed.output.calls.isEmpty)
+
+        let open = Harness(settings: smooth)
+        open.spaces.missionControlOpen = true
+        open.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        open.drag(dx: 0, dy: 10)
+        guard case .began(.vertical, let p)? = open.output.calls.first, p > 0 else {
+            Issue.record("expected a downward vertical swipe, got \(open.output.calls)")
+            return
+        }
+        open.controller.actionButtonUp()
+        guard case .ended? = open.output.calls.last else {
+            Issue.record("expected ended, got \(open.output.calls)")
+            return
+        }
+    }
+
+    @Test func verticalDownExitsMissionControlViaHotkeyWhenSmoothUnavailable() {
+        let h = Harness(settings: smooth, smoothAvailable: false)
+        h.spaces.missionControlOpen = true
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: 0, dy: 10)
+        h.drag(dx: 0, dy: 60)
+        h.controller.actionButtonUp()
+        #expect(h.output.steps == [.missionControl])
+    }
+
     @Test func verticalDownNoneDoesNothing() {
         let h = Harness(settings: smooth.with { $0.dragDownAction = .none })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
@@ -181,13 +213,13 @@ import Testing
 
 @Suite struct GestureControllerSettingsTests {
     @Test func changingTapActionAtRuntimeAffectsNextTap() {
-        let h = Harness()
+        let h = Harness(settings: .defaults.with { $0.tapAction = .none })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.controller.actionButtonUp()
         h.controller.settings.tapAction = .appExpose
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.controller.actionButtonUp()
-        #expect(h.output.steps == [.missionControl, .appExpose])
+        #expect(h.output.steps == [.appExpose])
     }
 
     @Test func passThroughFlagResetsOnNextButtonDown() {
@@ -340,5 +372,52 @@ import Testing
         #expect(abs(progress - scaler.horizontalProgress(forDelta: -50)) < 1e-9)
         // 40 points in 9 ms on a 1000 point screen is a fast leftward flick.
         #expect(speed < -1)
+    }
+}
+
+@Suite struct GestureControllerComboClickTests {
+    @Test func leftClickWhileHoldingTakesAnAreaScreenshotAndSwallowsTheTap() {
+        let h = Harness(settings: .defaults.with { $0.tapAction = .appExpose })
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.controller.comboClick(.left)
+        h.controller.actionButtonUp()
+        #expect(h.output.steps == [.screenshotSelection])
+    }
+
+    @Test func rightClickWhileHoldingOpensScreenshotOptions() {
+        let h = Harness()
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.controller.comboClick(.right)
+        h.controller.actionButtonUp()
+        #expect(h.output.steps == [.screenshotOptions])
+    }
+
+    @Test func comboDuringADragCancelsTheSwipeFirst() {
+        let h = Harness(settings: .defaults.with { $0.switchingStyle = .smooth })
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -100, dy: 0)
+        h.controller.comboClick(.left)
+        guard case .cancelled? = h.output.dockCalls.last else {
+            Issue.record("expected cancelled, got \(h.output.calls)")
+            return
+        }
+        h.controller.actionButtonUp()
+        #expect(h.output.steps == [.screenshotSelection])
+        #expect(h.output.dockCalls.count == 2)
+    }
+
+    @Test func comboWithoutTheActionButtonHeldIsIgnored() {
+        let h = Harness()
+        h.controller.comboClick(.left)
+        #expect(h.output.calls.isEmpty)
+    }
+
+    @Test func onlyTheFirstComboInAHoldFires() {
+        let h = Harness()
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.controller.comboClick(.left)
+        h.controller.comboClick(.right)
+        h.controller.actionButtonUp()
+        #expect(h.output.steps == [.screenshotSelection])
     }
 }

@@ -53,6 +53,7 @@ struct SettingsView: View {
                 LabeledContent("Drag left or right", value: "Switch desktop")
                 LabeledContent("Drag up", value: "Mission Control")
                 Picker("Drag down", selection: $model.settings.dragDownAction) {
+                    Text("Back to your app (closes Mission Control)").tag(DragDownAction.exitMissionControl)
                     Text("App Expose").tag(DragDownAction.appExpose)
                     Text("Show Desktop").tag(DragDownAction.showDesktop)
                     Text("Nothing").tag(DragDownAction.none)
@@ -75,14 +76,16 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Tap") {
+            Section("Tap and clicks") {
                 Picker("Tap without moving", selection: $model.settings.tapAction) {
+                    Text("Nothing").tag(TapAction.none)
                     Text("Mission Control").tag(TapAction.missionControl)
                     Text("App Expose").tag(TapAction.appExpose)
                     Text("Show Desktop").tag(TapAction.showDesktop)
-                    Text("Nothing").tag(TapAction.none)
                     Text("Pass the click through").tag(TapAction.passThrough)
                 }
+                LabeledContent("Hold + left click", value: "Area screenshot")
+                LabeledContent("Hold + right click", value: "Screenshot and recording panel")
             }
 
             Section("General") {

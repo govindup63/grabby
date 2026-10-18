@@ -8,8 +8,8 @@ import Testing
         #expect(s.schemaVersion == 1)
         #expect(s.actionButton == nil)
         #expect(s.switchingStyle == .smooth)
-        #expect(s.dragDownAction == .appExpose)
-        #expect(s.tapAction == .missionControl)
+        #expect(s.dragDownAction == .exitMissionControl)
+        #expect(s.tapAction == .none)
         #expect(s.naturalDirection == nil)
         #expect(s.pinPointer == false)
         #expect(s.launchAtLogin == false)
@@ -58,10 +58,10 @@ import Testing
     }
 
     @Test func decodingFillsMissingKeysWithDefaults() throws {
-        let json = #"{"schemaVersion":1,"tapAction":"none"}"#
+        let json = #"{"schemaVersion":1,"tapAction":"appExpose"}"#
         let s = try JSONDecoder().decode(Settings.self, from: Data(json.utf8))
-        #expect(s.tapAction == .none)
-        #expect(s.dragDownAction == .appExpose)
+        #expect(s.tapAction == .appExpose)
+        #expect(s.dragDownAction == .exitMissionControl)
         #expect(s.pinPointer == false)
         #expect(s.throwStrength == 0.35)
         #expect(s.switchingStyle == .smooth)
