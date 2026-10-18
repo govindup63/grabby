@@ -31,6 +31,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var notifier: MenuBarNotifier!
     private var settingsModel: SettingsModel!
     private var settingsWindow: SettingsWindowController!
+    private var onboarding: OnboardingWindowController!
+    private var conflictTimer: Timer?
     /// Only ever touched on the tap thread after construction.
     nonisolated(unsafe) private var controller: GestureController!
 
@@ -56,8 +58,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         spaces = SpaceObserver(api: privateAPI)
         hotkeys = HotkeyEngine(api: privateAPI)
         dock = DockSwipeEngine(api: privateAPI)
-        output = EngineOutput(dock: dock, hotkeys: hotkeys) {
-            Log.engine.error("Smooth engine hard failure")
+        output = EngineOutput(dock: dock, hotkeys: hotkeys) { [weak self] in
+            Log.engine.error("Smooth engine hard failure, switching this gesture to the keyboard path")
+            self?.controller.reportHardError()
         }
         controller = GestureController(settings: settings, smoothAvailable: smoothAvailable, clock: MonotonicClock(),
                                        output: output, spaces: spaces, pointer: moveTap, notifier: notifier)
@@ -73,15 +76,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.buttonTap.setEnabled(self.hasAccess)
         }
         settingsWindow = SettingsWindowController(model: settingsModel)
+        settingsWindow.onAppear = { [weak self] in self?.refreshConflicts() }
         statusItem.onOpenSettings = { [weak self] in self?.settingsWindow.show() }
+        onboarding = OnboardingWindowController()
+        conflictTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.refreshConflicts() }
+        }
 
         permissions.startPolling { [weak self] granted in
             self?.accessChanged(granted)
         }
 
-        if settings.actionButton == nil {
+        if settings.actionButton == nil && hasAccess {
             settingsWindow.show()
         }
+    }
+
+    private func refreshConflicts() {
+        settingsModel.conflicts = ConflictDetector.conflicts(actionButton: settings.actionButton)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -114,11 +126,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         moveTap.onMove = { dx, dy in
             controller.pointerMoved(dx: dx, dy: dy)
         }
+        let spaces = self.spaces!
+        let tapThread = self.tapThread
         buttonTap.onUp = { [weak self] in
             controller.actionButtonUp()
             moveTap.setEnabled(false)
             if controller.lastTapWasPassThrough, let button = controller.settings.actionButton {
                 self?.replayClick(button: button)
+            }
+            if controller.awaitingVerification {
+                tapThread.after(0.4) {
+                    controller.verifySmoothGesture(spaceAfter: spaces.activeSpace())
+                    Log.gesture.debug("Verified smooth gesture, sticky=\(controller.stickyFallback)")
+                }
             }
         }
     }
@@ -147,6 +167,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let text = tapsReady ? "Grabby is working" : "Could not start event taps"
             statusItem.setStatus(text)
             settingsModel.status = text
+            onboarding.close()
+            if settings.actionButton == nil { settingsWindow.show() }
             Log.permission.info("Access granted, taps ready: \(self.tapsReady)")
         } else {
             buttonTap.setEnabled(false)
@@ -158,6 +180,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             statusItem.setStatus("Needs Accessibility access")
             settingsModel.status = "Needs Accessibility access"
+            onboarding.show()
             Log.permission.error("Accessibility access missing")
         }
     }

@@ -9,6 +9,8 @@ public final class GestureController: @unchecked Sendable {
     public var systemNaturalDirection = true
     public private(set) var stickyFallback = false
     public private(set) var lastTapWasPassThrough = false
+    /// True after a smooth gesture ended normally, until `verifySmoothGesture` is called.
+    public var awaitingVerification: Bool { pendingVerification != nil }
 
     private let smoothAvailable: Bool
     private let clock: any GrabbyClock
@@ -28,6 +30,12 @@ public final class GestureController: @unchecked Sendable {
     private var engine: Engine = .none
     private var pinned = false
     private var spaceBefore: UInt64 = 0
+    private var dragAxis: Axis = .horizontal
+    private var dragDistance: Double = 0
+    private var hardErrorThisGesture = false
+    private var pendingVerification: (axis: Axis, distance: Double)?
+    private var consecutiveFailures = 0
+    private var noticeShown = false
 
     public init(settings: Settings, smoothAvailable: Bool, clock: any GrabbyClock,
                 output: any GestureOutput, spaces: any SpaceReader,
@@ -46,6 +54,7 @@ public final class GestureController: @unchecked Sendable {
     public func actionButtonDown(at origin: Point) {
         self.origin = origin
         lastTapWasPassThrough = false
+        hardErrorThisGesture = false
         engine = .none
         handle(recognizer.buttonDown())
     }
@@ -62,8 +71,28 @@ public final class GestureController: @unchecked Sendable {
         handle(recognizer.cancel())
     }
 
+    /// Called about 400 ms after a smooth gesture ended, with the active Space read at that moment.
     public func verifySmoothGesture(spaceAfter: UInt64) {
-        // Completed in User Story 4.
+        guard let pending = pendingVerification else { return }
+        pendingVerification = nil
+        record(FallbackObservation(axis: pending.axis, distance: pending.distance, spaceBefore: spaceBefore,
+                                   spaceAfter: spaceAfter, hardError: false,
+                                   consecutiveFailures: consecutiveFailures,
+                                   naturalDirection: userNaturalDirection, dragDownAction: settings.dragDownAction))
+    }
+
+    /// The smooth engine could not post. Cancel the dock swipe, catch up, and finish the drag on the keyboard path.
+    public func reportHardError() {
+        guard case .smooth(_, let coalescer, let axis) = engine else { return }
+        hardErrorThisGesture = true
+        let offset = coalescer.flushForEnd()
+        output.dockSwipeCancelled(progress: offset, exitSpeed: EndPhaseDecider.exitSpeed(lastDelta: coalescer.lastDelta))
+        record(FallbackObservation(axis: axis, distance: dragDistance, spaceBefore: spaceBefore, spaceAfter: spaceBefore,
+                                   hardError: true, consecutiveFailures: consecutiveFailures,
+                                   naturalDirection: userNaturalDirection, dragDownAction: settings.dragDownAction))
+        var stepper = DiscreteStepper(axis: axis, dragDownAction: settings.dragDownAction, naturalDirection: userNaturalDirection)
+        _ = stepper.move(delta: dragDistance)  // the catch-up step already covered this distance
+        engine = .keyboard(stepper)
     }
 
     // MARK: Dispatch
@@ -90,12 +119,18 @@ public final class GestureController: @unchecked Sendable {
         }
     }
 
+    private var userNaturalDirection: Bool {
+        settings.naturalDirection ?? systemNaturalDirection
+    }
+
     private var useSmooth: Bool {
         settings.switchingStyle == .smooth && smoothAvailable && !stickyFallback
     }
 
     private func begin(_ axis: Axis) {
         let distance = recognizer.distance
+        dragAxis = axis
+        dragDistance = distance
         let down = axis == .vertical && distance > 0
         if down && settings.dragDownAction == .none {
             engine = .none
@@ -103,18 +138,16 @@ public final class GestureController: @unchecked Sendable {
         }
         let keyboardOnly = down && settings.dragDownAction == .showDesktop
         if useSmooth && !keyboardOnly {
-            let userNatural = settings.naturalDirection ?? systemNaturalDirection
             let scaler = SwipeProgressScaler(screen: spaces.screenSize(),
                                              spaceCount: spaces.spaceCount(onDisplayUnderPointer: true),
-                                             naturalDirection: userNatural != systemNaturalDirection)
+                                             naturalDirection: userNaturalDirection != systemNaturalDirection)
             var coalescer = EventCoalescer(clock: clock)
-            let initial = progress(for: distance, axis: axis, scaler: scaler)
-            let sent = coalescer.began(progress: initial)
+            let sent = coalescer.began(progress: progress(for: distance, axis: axis, scaler: scaler))
             spaceBefore = spaces.activeSpace()
             engine = .smooth(scaler, coalescer, axis)
             output.dockSwipeBegan(axis: axis, progress: sent)
         } else {
-            var stepper = DiscreteStepper(axis: axis, dragDownAction: settings.dragDownAction)
+            var stepper = DiscreteStepper(axis: axis, dragDownAction: settings.dragDownAction, naturalDirection: userNaturalDirection)
             let steps = stepper.move(delta: distance)
             engine = .keyboard(stepper)
             steps.forEach(output.perform)
@@ -126,10 +159,10 @@ public final class GestureController: @unchecked Sendable {
     }
 
     private func change(_ delta: Double) {
+        dragDistance += delta
         switch engine {
         case .smooth(let scaler, var coalescer, let axis):
-            let p = progress(for: delta, axis: axis, scaler: scaler)
-            let sent = coalescer.changed(delta: p)
+            let sent = coalescer.changed(delta: progress(for: delta, axis: axis, scaler: scaler))
             engine = .smooth(scaler, coalescer, axis)
             if let sent { output.dockSwipeChanged(progress: sent) }
         case .keyboard(var stepper):
@@ -142,14 +175,19 @@ public final class GestureController: @unchecked Sendable {
     }
 
     private func end(cancel: Bool) {
-        if case .smooth(_, let coalescer, _) = engine {
+        if case .smooth(_, let coalescer, let axis) = engine {
             let offset = coalescer.flushForEnd()
             let speed = EndPhaseDecider.exitSpeed(lastDelta: coalescer.lastDelta)
             let phase: EndPhase = cancel ? .cancelled
                 : EndPhaseDecider.phase(lastDelta: coalescer.lastDelta, originOffset: offset)
             switch phase {
-            case .ended: output.dockSwipeEnded(progress: offset, exitSpeed: speed)
-            case .cancelled: output.dockSwipeCancelled(progress: offset, exitSpeed: speed)
+            case .ended:
+                output.dockSwipeEnded(progress: offset, exitSpeed: speed)
+                if !hardErrorThisGesture {
+                    pendingVerification = (axis, dragDistance)
+                }
+            case .cancelled:
+                output.dockSwipeCancelled(progress: offset, exitSpeed: speed)
             }
         }
         if pinned {
@@ -157,6 +195,19 @@ public final class GestureController: @unchecked Sendable {
             pinned = false
         }
         engine = .none
+    }
+
+    private func record(_ observation: FallbackObservation) {
+        let verdict = FallbackDecider.decide(observation)
+        consecutiveFailures = verdict.failureCount
+        if let step = verdict.catchUpStep { output.perform(step) }
+        if verdict.becameSticky && !stickyFallback {
+            stickyFallback = true
+            if !noticeShown {
+                noticeShown = true
+                notifier.showFallbackNotice()
+            }
+        }
     }
 
     private func progress(for delta: Double, axis: Axis, scaler: SwipeProgressScaler) -> Double {

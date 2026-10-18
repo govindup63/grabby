@@ -182,3 +182,96 @@ import Testing
         #expect(h.controller.settings.actionButton == 3)
     }
 }
+
+@Suite struct GestureControllerKeyboardAndFallbackTests {
+    let smooth = Settings.defaults.with { $0.switchingStyle = .smooth }
+
+    @Test func keyboardStyleStepsAt60And260WithoutDockSwipes() {
+        let h = Harness(settings: .defaults.with { $0.switchingStyle = .keyboard })
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -60, dy: 0)
+        #expect(h.output.steps == [.moveSpaceRight])
+        h.drag(dx: -200, dy: 0)
+        #expect(h.output.steps == [.moveSpaceRight, .moveSpaceRight])
+        h.controller.actionButtonUp()
+        #expect(h.output.dockCalls.isEmpty)
+        #expect(h.pointer.pinned.count == 1)
+        #expect(h.pointer.unpinCount == 1)
+    }
+
+    @Test func keyboardStyleFollowsNaturalDirectionSetting() {
+        let h = Harness(settings: .defaults.with { $0.switchingStyle = .keyboard; $0.naturalDirection = false })
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: 60, dy: 0)
+        #expect(h.output.steps == [.moveSpaceRight])
+    }
+
+    @Test func unchangedSpaceAfterCommittedSmoothDragFiresCatchUp() {
+        let h = Harness(settings: smooth)
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -80, dy: 0)
+        h.controller.actionButtonUp()
+        #expect(h.output.steps.isEmpty)
+        h.controller.verifySmoothGesture(spaceAfter: h.spaces.space)
+        #expect(h.output.steps == [.moveSpaceRight])
+        #expect(h.controller.stickyFallback == false)
+        #expect(h.notifier.notices == 0)
+    }
+
+    @Test func twoFailuresGoStickyWithOneNoticeAndKeyboardAfterwards() {
+        let h = Harness(settings: smooth)
+        for _ in 0..<2 {
+            h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+            h.drag(dx: -80, dy: 0)
+            h.controller.actionButtonUp()
+            h.controller.verifySmoothGesture(spaceAfter: h.spaces.space)
+        }
+        #expect(h.controller.stickyFallback)
+        #expect(h.notifier.notices == 1)
+        let before = h.output.dockCalls.count
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -80, dy: 0)
+        h.controller.actionButtonUp()
+        #expect(h.output.dockCalls.count == before)
+        #expect(h.output.steps == [.moveSpaceRight, .moveSpaceRight, .moveSpaceRight])
+        #expect(h.notifier.notices == 1)
+    }
+
+    @Test func verifiedSuccessResetsTheFailureCount() {
+        let h = Harness(settings: smooth)
+        func gesture(changed: Bool) {
+            h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+            h.drag(dx: -80, dy: 0)
+            h.controller.actionButtonUp()
+            h.controller.verifySmoothGesture(spaceAfter: changed ? h.spaces.space + 1 : h.spaces.space)
+        }
+        gesture(changed: false)
+        gesture(changed: true)
+        gesture(changed: false)
+        #expect(h.controller.stickyFallback == false)
+        #expect(h.notifier.notices == 0)
+    }
+
+    @Test func hardErrorMidDragCancelsAndCatchesUp() {
+        let h = Harness(settings: smooth)
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -80, dy: 0)
+        h.controller.reportHardError()
+        guard case .cancelled? = h.output.dockCalls.last else {
+            Issue.record("expected cancelled, got \(h.output.calls)")
+            return
+        }
+        #expect(h.output.steps == [.moveSpaceRight])
+        h.drag(dx: -200, dy: 0)
+        #expect(h.output.steps == [.moveSpaceRight, .moveSpaceRight])
+        h.controller.actionButtonUp()
+        #expect(h.pointer.unpinCount == 1)
+    }
+
+    @Test func verifyWithoutAPrecedingSmoothGestureDoesNothing() {
+        let h = Harness(settings: smooth)
+        h.controller.verifySmoothGesture(spaceAfter: 99)
+        #expect(h.output.calls.isEmpty)
+        #expect(h.controller.stickyFallback == false)
+    }
+}
