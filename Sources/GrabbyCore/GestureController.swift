@@ -1,8 +1,8 @@
 import Foundation
 
 /// Drives one action-button gesture from recognizer events to engine calls.
-/// Not thread-safe: the app calls it from the tap thread only.
-public final class GestureController {
+/// Not internally synchronized: the app calls it from the tap thread only, hence `@unchecked Sendable`.
+public final class GestureController: @unchecked Sendable {
     public var settings: Settings
     /// The system's own natural-scrolling setting; the user's override is applied relative to it,
     /// because macOS 27 applies the system setting to Dock Swipes by itself.
