@@ -5,11 +5,18 @@ public enum EndPhase: Equatable, Sendable {
 }
 
 public enum EndPhaseDecider {
-    /// With throw on, a final delta against the accumulated offset means the user flicked back.
-    /// With throw at zero the desktop only ever follows the mouse, so the release position decides.
-    public static func phase(lastDelta: Double, originOffset: Double, throwStrength: Double) -> EndPhase {
-        if throwStrength <= 0 || lastDelta == 0 || originOffset == 0 { return .ended }
-        return (lastDelta < 0) == (originOffset < 0) ? .ended : .cancelled
+    public static let commitFraction: Double = 0.5
+
+    /// The Dock treats "ended" as commit to the next desktop and "cancelled" as snap back, whatever
+    /// the progress value. So: commit when the release point (plus any throw carry) is at least half
+    /// a desktop along. With throw on, a flick against the direction of travel snaps back instead.
+    public static func phase(lastDelta: Double, originOffset: Double, throwStrength: Double, oneSpace: Double) -> EndPhase {
+        if throwStrength > 0, lastDelta != 0, originOffset != 0, (lastDelta < 0) != (originOffset < 0) {
+            return .cancelled
+        }
+        let final = ThrowResolver.finalProgress(originOffset: originOffset, lastDelta: lastDelta,
+                                                throwStrength: throwStrength, oneSpace: oneSpace)
+        return abs(final) >= commitFraction * oneSpace ? .ended : .cancelled
     }
 
     public static func exitSpeed(lastDelta: Double, throwStrength: Double) -> Double {

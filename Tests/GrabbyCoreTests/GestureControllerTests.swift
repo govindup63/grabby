@@ -37,8 +37,8 @@ import Testing
         let h = Harness(settings: smooth.with { $0.throwStrength = 0 })
         h.controller.actionButtonDown(at: Point(x: 100, y: 100))
         h.drag(dx: -10, dy: 0)
-        h.drag(dx: -20, dy: 0)
-        h.drag(dx: -20, dy: 0)
+        h.drag(dx: -300, dy: 0)
+        h.drag(dx: -300, dy: 0)
         h.controller.actionButtonUp()
 
         let scaler = SwipeProgressScaler(screen: h.spaces.size, spaceCount: h.spaces.count, naturalDirection: false)
@@ -52,8 +52,20 @@ import Testing
             Issue.record("expected ended, got \(String(describing: h.output.calls.last))")
             return
         }
-        #expect(abs(progress - scaler.horizontalProgress(forDelta: -50)) < 1e-9)
+        #expect(abs(progress - scaler.horizontalProgress(forDelta: -610)) < 1e-9)
         #expect(h.output.steps.isEmpty)
+    }
+
+    @Test func shortDragSnapsBack() {
+        let h = Harness(settings: smooth.with { $0.throwStrength = 0 })
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -10, dy: 0)
+        h.drag(dx: -40, dy: 0)
+        h.controller.actionButtonUp()
+        guard case .cancelled? = h.output.calls.last else {
+            Issue.record("expected cancelled for a short drag, got \(h.output.calls)")
+            return
+        }
     }
 
     @Test func reversedLastDeltaCancels() {
@@ -209,7 +221,7 @@ import Testing
     @Test func unchangedSpaceAfterCommittedSmoothDragFiresCatchUp() {
         let h = Harness(settings: smooth)
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
-        h.drag(dx: -80, dy: 0)
+        h.drag(dx: -600, dy: 0)
         h.controller.actionButtonUp()
         #expect(h.output.steps.isEmpty)
         h.controller.verifySmoothGesture(spaceAfter: h.spaces.space)
@@ -222,7 +234,7 @@ import Testing
         let h = Harness(settings: smooth)
         for _ in 0..<2 {
             h.controller.actionButtonDown(at: Point(x: 0, y: 0))
-            h.drag(dx: -80, dy: 0)
+            h.drag(dx: -600, dy: 0)
             h.controller.actionButtonUp()
             h.controller.verifySmoothGesture(spaceAfter: h.spaces.space)
         }
@@ -241,7 +253,7 @@ import Testing
         let h = Harness(settings: smooth)
         func gesture(changed: Bool) {
             h.controller.actionButtonDown(at: Point(x: 0, y: 0))
-            h.drag(dx: -80, dy: 0)
+            h.drag(dx: -600, dy: 0)
             h.controller.actionButtonUp()
             h.controller.verifySmoothGesture(spaceAfter: changed ? h.spaces.space + 1 : h.spaces.space)
         }
@@ -283,7 +295,7 @@ import Testing
         let h = Harness(settings: base.with { $0.throwStrength = 0 })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.drag(dx: -10, dy: 0)
-        h.drag(dx: -40, dy: 0)
+        h.drag(dx: -600, dy: 0)
         h.drag(dx: 20, dy: 0)   // reversal would cancel with throw on
         h.controller.actionButtonUp()
         let scaler = SwipeProgressScaler(screen: h.spaces.size, spaceCount: h.spaces.count, naturalDirection: false)
@@ -291,7 +303,7 @@ import Testing
             Issue.record("expected ended, got \(h.output.calls)")
             return
         }
-        #expect(abs(progress - scaler.horizontalProgress(forDelta: -30)) < 1e-9)
+        #expect(abs(progress - scaler.horizontalProgress(forDelta: -590)) < 1e-9)
         #expect(speed == 0)
     }
 

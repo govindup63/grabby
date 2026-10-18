@@ -183,11 +183,13 @@ public final class GestureController: @unchecked Sendable {
             let offset = coalescer.flushForEnd()
             let strength = settings.throwStrength
             let speed = EndPhaseDecider.exitSpeed(lastDelta: coalescer.lastDelta, throwStrength: strength)
+            let oneSpace = axis == .horizontal ? scaler.offsetForOneSpace : 1.0
             let phase: EndPhase = cancel ? .cancelled
-                : EndPhaseDecider.phase(lastDelta: coalescer.lastDelta, originOffset: offset, throwStrength: strength)
+                : EndPhaseDecider.phase(lastDelta: coalescer.lastDelta, originOffset: offset,
+                                        throwStrength: strength, oneSpace: oneSpace)
+            onTrace?("end offset=\(offset) lastDelta=\(coalescer.lastDelta) oneSpace=\(oneSpace) phase=\(phase)")
             switch phase {
             case .ended:
-                let oneSpace = axis == .horizontal ? scaler.offsetForOneSpace : 1.0
                 let final = ThrowResolver.finalProgress(originOffset: offset, lastDelta: coalescer.lastDelta,
                                                         throwStrength: strength, oneSpace: oneSpace)
                 output.dockSwipeEnded(progress: final, exitSpeed: speed)

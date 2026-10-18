@@ -2,22 +2,33 @@ import Testing
 @testable import GrabbyCore
 
 @Suite struct EndPhaseDeciderTests {
-    @Test func sameSignEnds() {
-        #expect(EndPhaseDecider.phase(lastDelta: 0.1, originOffset: 0.8, throwStrength: 1) == .ended)
-        #expect(EndPhaseDecider.phase(lastDelta: -0.1, originOffset: -0.8, throwStrength: 1) == .ended)
+    let oneSpace = 1.5
+
+    @Test func pastHalfwayCommits() {
+        #expect(EndPhaseDecider.phase(lastDelta: 0.01, originOffset: 0.8 * oneSpace, throwStrength: 0, oneSpace: oneSpace) == .ended)
+        #expect(EndPhaseDecider.phase(lastDelta: -0.01, originOffset: -0.8 * oneSpace, throwStrength: 0, oneSpace: oneSpace) == .ended)
+        #expect(EndPhaseDecider.phase(lastDelta: 0, originOffset: 0.5 * oneSpace, throwStrength: 0, oneSpace: oneSpace) == .ended)
     }
 
-    @Test func oppositeSignCancelsWhenThrowIsOn() {
-        #expect(EndPhaseDecider.phase(lastDelta: -0.1, originOffset: 0.8, throwStrength: 0.5) == .cancelled)
-        #expect(EndPhaseDecider.phase(lastDelta: 0.1, originOffset: -0.8, throwStrength: 0.5) == .cancelled)
+    @Test func shortOfHalfwaySnapsBack() {
+        #expect(EndPhaseDecider.phase(lastDelta: 0.01, originOffset: 0.1 * oneSpace, throwStrength: 0, oneSpace: oneSpace) == .cancelled)
+        #expect(EndPhaseDecider.phase(lastDelta: 0.01, originOffset: 0.49 * oneSpace, throwStrength: 0, oneSpace: oneSpace) == .cancelled)
+        #expect(EndPhaseDecider.phase(lastDelta: 0, originOffset: 0, throwStrength: 1, oneSpace: oneSpace) == .cancelled)
     }
 
-    @Test func zeroThrowNeverCancelsSoPositionDecides() {
-        #expect(EndPhaseDecider.phase(lastDelta: -0.1, originOffset: 0.8, throwStrength: 0) == .ended)
+    @Test func zeroThrowIgnoresReversalPositionDecides() {
+        #expect(EndPhaseDecider.phase(lastDelta: -0.05, originOffset: 0.8 * oneSpace, throwStrength: 0, oneSpace: oneSpace) == .ended)
     }
 
-    @Test func zeroLastDeltaEnds() {
-        #expect(EndPhaseDecider.phase(lastDelta: 0, originOffset: 0.5, throwStrength: 1) == .ended)
+    @Test func withThrowAReverseFlickSnapsBackEvenPastHalfway() {
+        #expect(EndPhaseDecider.phase(lastDelta: -0.05, originOffset: 0.8 * oneSpace, throwStrength: 0.5, oneSpace: oneSpace) == .cancelled)
+    }
+
+    @Test func withThrowAForwardFlickCommitsShortOfHalfway() {
+        // ThrowResolver carries up to 60% of a space at full strength; 0.1 + 0.6 > 0.5.
+        #expect(EndPhaseDecider.phase(lastDelta: 0.05, originOffset: 0.1 * oneSpace, throwStrength: 1, oneSpace: oneSpace) == .ended)
+        // A tiny nudge is not a flick.
+        #expect(EndPhaseDecider.phase(lastDelta: 0.0005, originOffset: 0.1 * oneSpace, throwStrength: 1, oneSpace: oneSpace) == .cancelled)
     }
 
     @Test func exitSpeedScalesWithThrow() {
