@@ -20,6 +20,9 @@ public final class DockSwipeEngine: @unchecked Sendable {
     }
 
     public static let resendDelays: [TimeInterval] = [0.2, 0.5]
+    /// Mac Mouse Fix resends end events to clear a rare stuck transition. A stray end event may
+    /// itself read as a new discrete swipe, so this is off until proven necessary.
+    public var resendEndEvents = false
 
     public enum AttachMode: String, Sendable { case skyLight, poke }
     /// Debug switch for the slide experiment; SkyLight is the normal path.
@@ -57,12 +60,13 @@ public final class DockSwipeEngine: @unchecked Sendable {
         Trace.log("dockswipe \(axis == .horizontal ? "h" : "v") phase=\(phase.bits) progress=\(String(format: "%.4f", progress)) exitSpeed=\(String(format: "%.3f", exitSpeed))")
         Log.engine.debug("DockSwipeEngine: \(axis == .horizontal ? "h" : "v") phase=\(phase.bits) progress=\(progress, format: .fixed(precision: 4))")
 
-        if phase == .ended || phase == .cancelled {
+        if resendEndEvents, phase == .ended || phase == .cancelled {
             // The end event is occasionally dropped under load; resend it so the transition never sticks.
             for delay in DockSwipeEngine.resendDelays {
                 let item = DispatchWorkItem { [weak self] in
                     guard let self, let again = self.makeEvent(axis: axis, phase: phase, progress: progress, exitSpeed: exitSpeed) else { return }
                     again.post(tap: .cgSessionEventTap)
+                    Trace.log("dockswipe resend phase=\(phase.bits)")
                 }
                 resends.append(item)
                 queue.asyncAfter(deadline: .now() + delay, execute: item)
@@ -82,7 +86,7 @@ public final class DockSwipeEngine: @unchecked Sendable {
               let attach = api.SLEventSetIOHIDEvent else { return nil }
 
         let options = phase.bits << UInt32(GRABBY_PHASE_SHIFT)
-        guard let hid = create(kCFAllocatorDefault, UInt32(GRABBY_HID_TYPE_DOCK_SWIPE), 0, options) else { return nil }
+        guard let hid = create(kCFAllocatorDefault, UInt32(GRABBY_HID_TYPE_DOCK_SWIPE), mach_absolute_time(), options) else { return nil }
         let hidEvent = hid.takeRetainedValue()
         let motion = axis == .horizontal ? GRABBY_DOCK_SWIPE_HORIZONTAL : GRABBY_DOCK_SWIPE_VERTICAL
         setInt(hidEvent, UInt32(GRABBY_HID_FIELD_DOCK_SWIPE_MOTION), CFIndex(motion))
@@ -90,7 +94,7 @@ public final class DockSwipeEngine: @unchecked Sendable {
         setFloat(hidEvent, UInt32(GRABBY_HID_FIELD_DOCK_SWIPE_PROGRESS), progress)
 
         if phase == .ended || phase == .cancelled,
-           let child = create(kCFAllocatorDefault, UInt32(GRABBY_HID_TYPE_VELOCITY), 0, 0) {
+           let child = create(kCFAllocatorDefault, UInt32(GRABBY_HID_TYPE_VELOCITY), mach_absolute_time(), 0) {
             let childEvent = child.takeRetainedValue()
             setFloat(childEvent, UInt32(GRABBY_HID_FIELD_VELOCITY_X), exitSpeed)
             setFloat(childEvent, UInt32(GRABBY_HID_FIELD_VELOCITY_Y), exitSpeed)
