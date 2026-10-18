@@ -35,17 +35,14 @@ public enum FallbackDecider {
     public static let stickyAfter = 2
 
     public static func decide(_ o: FallbackObservation) -> FallbackVerdict {
-        let committed = ReleaseDecider.looksCommitted(progress: o.progress)
-        if !committed && !o.hardError {
-            // Too short to tell anything; neither a success nor a failure.
-            return FallbackVerdict(catchUpStep: nil, failureCount: o.consecutiveFailures, becameSticky: false)
-        }
-        let silentMiss = o.axis == .horizontal && committed && o.spaceBefore == o.spaceAfter
-        let failed = o.hardError || silentMiss
-        guard failed else {
+        // Only hard errors count. An unchanged Space after a committed-looking drag is normal:
+        // the Dock weighs release velocity too and may have slid back. Verified against real
+        // trackpad recordings on macOS 27.
+        guard o.hardError else {
             return FallbackVerdict(catchUpStep: nil, failureCount: 0, becameSticky: false)
         }
         let count = o.consecutiveFailures + 1
+        let committed = ReleaseDecider.looksCommitted(progress: o.progress)
         return FallbackVerdict(catchUpStep: committed ? catchUp(for: o) : nil,
                                failureCount: count,
                                becameSticky: count >= stickyAfter)

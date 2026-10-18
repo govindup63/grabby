@@ -10,18 +10,11 @@ import Testing
                             naturalDirection: natural, dragDownAction: down)
     }
 
-    @Test func committedDragWithUnchangedSpaceIsAFailureWithCatchUp() {
-        let v = FallbackDecider.decide(obs(distance: -80, changed: false))
-        #expect(v.catchUpStep == .moveSpaceRight)
-        #expect(v.failureCount == 1)
-        #expect(v.becameSticky == false)
-    }
-
-    @Test func secondConsecutiveFailureBecomesSticky() {
+    @Test func unchangedSpaceIsNotAFailureTheDockMayHaveSlidBack() {
         let v = FallbackDecider.decide(obs(distance: -80, changed: false, failures: 1))
-        #expect(v.catchUpStep == .moveSpaceRight)
-        #expect(v.failureCount == 2)
-        #expect(v.becameSticky)
+        #expect(v.catchUpStep == nil)
+        #expect(v.failureCount == 0)
+        #expect(v.becameSticky == false)
     }
 
     @Test func changedSpaceIsASuccessAndResets() {
@@ -31,23 +24,23 @@ import Testing
         #expect(v.becameSticky == false)
     }
 
-    @Test func subThresholdDragIsNeverAFailure() {
-        let v = FallbackDecider.decide(obs(distance: -40, changed: false, failures: 1))
-        #expect(v.catchUpStep == nil)
+    @Test func hardErrorCountsAndCatchesUpWhenCommitted() {
+        let v = FallbackDecider.decide(obs(distance: -80, changed: false, hardError: true))
+        #expect(v.catchUpStep == .moveSpaceRight)
         #expect(v.failureCount == 1)
         #expect(v.becameSticky == false)
     }
 
-    @Test func hardErrorAlwaysCountsAndCatchesUp() {
-        let v = FallbackDecider.decide(obs(distance: -80, changed: true, hardError: true))
-        #expect(v.catchUpStep == .moveSpaceRight)
-        #expect(v.failureCount == 1)
+    @Test func secondHardErrorBecomesSticky() {
+        let v = FallbackDecider.decide(obs(distance: -80, changed: false, hardError: true, failures: 1))
+        #expect(v.failureCount == 2)
+        #expect(v.becameSticky)
     }
 
-    @Test func verticalWithoutHardErrorIsASuccess() {
-        let v = FallbackDecider.decide(obs(axis: .vertical, distance: -80, changed: false, failures: 1))
+    @Test func hardErrorShortOfHalfwayCountsWithoutCatchUp() {
+        let v = FallbackDecider.decide(obs(distance: -40, changed: false, hardError: true))
         #expect(v.catchUpStep == nil)
-        #expect(v.failureCount == 0)
+        #expect(v.failureCount == 1)
     }
 
     @Test func verticalHardErrorCatchesUpWithTheRightAction() {
@@ -57,8 +50,8 @@ import Testing
     }
 
     @Test func directionFollowsNaturalDirection() {
-        #expect(FallbackDecider.decide(obs(distance: 80, changed: false)).catchUpStep == .moveSpaceLeft)
-        #expect(FallbackDecider.decide(obs(distance: 80, changed: false, natural: false)).catchUpStep == .moveSpaceRight)
-        #expect(FallbackDecider.decide(obs(distance: -80, changed: false, natural: false)).catchUpStep == .moveSpaceLeft)
+        #expect(FallbackDecider.decide(obs(distance: 80, changed: false, hardError: true)).catchUpStep == .moveSpaceLeft)
+        #expect(FallbackDecider.decide(obs(distance: 80, changed: false, hardError: true, natural: false)).catchUpStep == .moveSpaceRight)
+        #expect(FallbackDecider.decide(obs(distance: -80, changed: false, hardError: true, natural: false)).catchUpStep == .moveSpaceLeft)
     }
 }

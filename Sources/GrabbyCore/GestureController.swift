@@ -139,6 +139,7 @@ public final class GestureController: @unchecked Sendable {
             return
         }
         let keyboardOnly = down && settings.dragDownAction == .showDesktop
+        onTrace?("engine=\(useSmooth && !keyboardOnly ? "smooth" : "keyboard") style=\(settings.switchingStyle) smoothAvailable=\(smoothAvailable) sticky=\(stickyFallback)")
         if useSmooth && !keyboardOnly {
             let scaler = SwipeProgressScaler(screen: spaces.screenSize(),
                                              spaceCount: spaces.spaceCount(onDisplayUnderPointer: true),

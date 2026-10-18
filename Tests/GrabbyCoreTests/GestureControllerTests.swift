@@ -232,25 +232,24 @@ import Testing
         #expect(h.output.steps == [.moveSpaceRight])
     }
 
-    @Test func unchangedSpaceAfterCommittedSmoothDragFiresCatchUp() {
+    @Test func unchangedSpaceAfterASmoothDragIsLeftAlone() {
         let h = Harness(settings: smooth)
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.drag(dx: -600, dy: 0)
         h.controller.actionButtonUp()
-        #expect(h.output.steps.isEmpty)
         h.controller.verifySmoothGesture(spaceAfter: h.spaces.space)
-        #expect(h.output.steps == [.moveSpaceRight])
+        #expect(h.output.steps.isEmpty)
         #expect(h.controller.stickyFallback == false)
         #expect(h.notifier.notices == 0)
     }
 
-    @Test func twoFailuresGoStickyWithOneNoticeAndKeyboardAfterwards() {
+    @Test func twoHardErrorsGoStickyWithOneNoticeAndKeyboardAfterwards() {
         let h = Harness(settings: smooth)
         for _ in 0..<2 {
             h.controller.actionButtonDown(at: Point(x: 0, y: 0))
             h.drag(dx: -600, dy: 0)
+            h.controller.reportHardError()
             h.controller.actionButtonUp()
-            h.controller.verifySmoothGesture(spaceAfter: h.spaces.space)
         }
         #expect(h.controller.stickyFallback)
         #expect(h.notifier.notices == 1)
@@ -263,17 +262,23 @@ import Testing
         #expect(h.notifier.notices == 1)
     }
 
-    @Test func verifiedSuccessResetsTheFailureCount() {
+    @Test func aCleanGestureResetsTheHardErrorCount() {
         let h = Harness(settings: smooth)
-        func gesture(changed: Bool) {
+        func failing() {
+            h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+            h.drag(dx: -600, dy: 0)
+            h.controller.reportHardError()
+            h.controller.actionButtonUp()
+        }
+        func clean() {
             h.controller.actionButtonDown(at: Point(x: 0, y: 0))
             h.drag(dx: -600, dy: 0)
             h.controller.actionButtonUp()
-            h.controller.verifySmoothGesture(spaceAfter: changed ? h.spaces.space + 1 : h.spaces.space)
+            h.controller.verifySmoothGesture(spaceAfter: h.spaces.space + 1)
         }
-        gesture(changed: false)
-        gesture(changed: true)
-        gesture(changed: false)
+        failing()
+        clean()
+        failing()
         #expect(h.controller.stickyFallback == false)
         #expect(h.notifier.notices == 0)
     }
