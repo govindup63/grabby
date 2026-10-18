@@ -35,7 +35,7 @@ public final class GestureController: @unchecked Sendable {
     private var dragAxis: Axis = .horizontal
     private var dragDistance: Double = 0
     private var hardErrorThisGesture = false
-    private var pendingVerification: (axis: Axis, distance: Double)?
+    private var pendingVerification: (axis: Axis, progress: Double)?
     private var consecutiveFailures = 0
     private var noticeShown = false
 
@@ -77,7 +77,7 @@ public final class GestureController: @unchecked Sendable {
     public func verifySmoothGesture(spaceAfter: UInt64) {
         guard let pending = pendingVerification else { return }
         pendingVerification = nil
-        record(FallbackObservation(axis: pending.axis, distance: pending.distance, spaceBefore: spaceBefore,
+        record(FallbackObservation(axis: pending.axis, progress: pending.progress, spaceBefore: spaceBefore,
                                    spaceAfter: spaceAfter, hardError: false,
                                    consecutiveFailures: consecutiveFailures,
                                    naturalDirection: userNaturalDirection, dragDownAction: settings.dragDownAction))
@@ -88,8 +88,8 @@ public final class GestureController: @unchecked Sendable {
         guard case .smooth(_, let coalescer, let axis) = engine else { return }
         hardErrorThisGesture = true
         let offset = coalescer.flushForEnd()
-        output.dockSwipeCancelled(progress: offset, exitSpeed: EndPhaseDecider.exitSpeed(lastDelta: coalescer.lastDelta, throwStrength: settings.throwStrength))
-        record(FallbackObservation(axis: axis, distance: dragDistance, spaceBefore: spaceBefore, spaceAfter: spaceBefore,
+        output.dockSwipeCancelled(progress: offset, exitSpeed: 0)
+        record(FallbackObservation(axis: axis, progress: offset, spaceBefore: spaceBefore, spaceAfter: spaceBefore,
                                    hardError: true, consecutiveFailures: consecutiveFailures,
                                    naturalDirection: userNaturalDirection, dragDownAction: settings.dragDownAction))
         var stepper = DiscreteStepper(axis: axis, dragDownAction: settings.dragDownAction, naturalDirection: userNaturalDirection)
@@ -179,25 +179,19 @@ public final class GestureController: @unchecked Sendable {
     }
 
     private func end(cancel: Bool) {
-        if case .smooth(let scaler, let coalescer, let axis) = engine {
+        if case .smooth(_, let coalescer, let axis) = engine {
             let offset = coalescer.flushForEnd()
-            let strength = settings.throwStrength
-            let speed = EndPhaseDecider.exitSpeed(lastDelta: coalescer.lastDelta, throwStrength: strength)
-            let oneSpace = axis == .horizontal ? scaler.offsetForOneSpace : 1.0
-            let phase: EndPhase = cancel ? .cancelled
-                : EndPhaseDecider.phase(lastDelta: coalescer.lastDelta, originOffset: offset,
-                                        throwStrength: strength, oneSpace: oneSpace)
-            onTrace?("end offset=\(offset) lastDelta=\(coalescer.lastDelta) oneSpace=\(oneSpace) phase=\(phase)")
-            switch phase {
-            case .ended:
-                let final = ThrowResolver.finalProgress(originOffset: offset, lastDelta: coalescer.lastDelta,
-                                                        throwStrength: strength, oneSpace: oneSpace)
-                output.dockSwipeEnded(progress: final, exitSpeed: speed)
+            if cancel {
+                onTrace?("end cancelled offset=\(offset)")
+                output.dockSwipeCancelled(progress: offset, exitSpeed: 0)
+            } else {
+                let velocity = coalescer.velocity(now: clock.now())
+                let speed = ReleaseDecider.exitSpeed(velocity: velocity, progress: offset, throwStrength: settings.throwStrength)
+                onTrace?("end offset=\(offset) velocity=\(velocity) exitSpeed=\(speed)")
+                output.dockSwipeEnded(progress: offset, exitSpeed: speed)
                 if !hardErrorThisGesture {
-                    pendingVerification = (axis, dragDistance)
+                    pendingVerification = (axis, offset)
                 }
-            case .cancelled:
-                output.dockSwipeCancelled(progress: offset, exitSpeed: speed)
             }
         }
         if pinned {

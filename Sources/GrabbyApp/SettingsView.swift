@@ -70,7 +70,7 @@ struct SettingsView: View {
                     } maximumValueLabel: {
                         Image(systemName: "hand.wave").foregroundStyle(.secondary)
                     }
-                    Text("At zero the desktop only follows the mouse and stays where you let go. Further right, a quick flick carries it to the next desktop.")
+                    Text("At zero, where you let go decides: past halfway it completes, otherwise it slides back. Further right, the speed of your hand at release counts too, so a flick can finish the move.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

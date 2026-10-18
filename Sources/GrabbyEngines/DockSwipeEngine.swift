@@ -32,6 +32,8 @@ public final class DockSwipeEngine: @unchecked Sendable {
     private let fakeFailure: Bool
     private let queue = DispatchQueue(label: "com.pixelstwo.grabby.dockswipe")
     private var resends: [DispatchWorkItem] = []
+    private var maskSent = false
+    private static let maskThreshold = 0.02
 
     public init(api: grabby_private_api,
                 fakeFailure: Bool = ProcessInfo.processInfo.environment["GRABBY_FAKE_SMOOTH_FAILURE"] == "1") {
@@ -47,7 +49,7 @@ public final class DockSwipeEngine: @unchecked Sendable {
     /// Returns false on a hard failure (missing symbol or event creation failure).
     @discardableResult
     public func post(axis: Axis, phase: Phase, progress: Double, exitSpeed: Double = 0) -> Bool {
-        if phase == .began { cancelResends() }
+        if phase == .began { cancelResends(); maskSent = false }
         if fakeFailure {
             Log.engine.debug("DockSwipeEngine: GRABBY_FAKE_SMOOTH_FAILURE set, posting nothing")
             return true
@@ -92,6 +94,12 @@ public final class DockSwipeEngine: @unchecked Sendable {
         setInt(hidEvent, UInt32(GRABBY_HID_FIELD_DOCK_SWIPE_MOTION), CFIndex(motion))
         setInt(hidEvent, UInt32(GRABBY_HID_FIELD_DOCK_SWIPE_FLAVOR), CFIndex(GRABBY_FLAVOR_DOCK_PRIMARY))
         setFloat(hidEvent, UInt32(GRABBY_HID_FIELD_DOCK_SWIPE_PROGRESS), progress)
+        // Real trackpad events flag the swipe direction exactly once, early in the gesture.
+        if phase == .changed, !maskSent, abs(progress) >= DockSwipeEngine.maskThreshold {
+            maskSent = true
+            let mask: CFIndex = axis == .horizontal ? (progress < 0 ? 4 : 8) : (progress < 0 ? 1 : 2)
+            setInt(hidEvent, UInt32(GRABBY_HID_FIELD_DOCK_SWIPE_MASK), mask)
+        }
 
         if phase == .ended || phase == .cancelled,
            let child = create(kCFAllocatorDefault, UInt32(GRABBY_HID_TYPE_VELOCITY), mach_absolute_time(), 0) {

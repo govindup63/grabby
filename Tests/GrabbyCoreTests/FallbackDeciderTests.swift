@@ -2,9 +2,10 @@ import Testing
 @testable import GrabbyCore
 
 @Suite struct FallbackDeciderTests {
+    /// `distance` here is Dock progress: 1.0 is one desktop, 0.5 commits.
     func obs(axis: Axis = .horizontal, distance: Double, changed: Bool, hardError: Bool = false,
              failures: Int = 0, natural: Bool = true, down: DragDownAction = .appExpose) -> FallbackObservation {
-        FallbackObservation(axis: axis, distance: distance, spaceBefore: 1, spaceAfter: changed ? 2 : 1,
+        FallbackObservation(axis: axis, progress: distance / 100, spaceBefore: 1, spaceAfter: changed ? 2 : 1,
                             hardError: hardError, consecutiveFailures: failures,
                             naturalDirection: natural, dragDownAction: down)
     }

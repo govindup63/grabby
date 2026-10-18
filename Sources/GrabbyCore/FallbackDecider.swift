@@ -2,7 +2,8 @@ import Foundation
 
 public struct FallbackObservation: Equatable, Sendable {
     public var axis: Axis
-    public var distance: Double
+    /// Dock progress at release; 1.0 is one desktop.
+    public var progress: Double
     public var spaceBefore: UInt64
     public var spaceAfter: UInt64
     public var hardError: Bool
@@ -10,10 +11,10 @@ public struct FallbackObservation: Equatable, Sendable {
     public var naturalDirection: Bool
     public var dragDownAction: DragDownAction
 
-    public init(axis: Axis, distance: Double, spaceBefore: UInt64, spaceAfter: UInt64, hardError: Bool,
+    public init(axis: Axis, progress: Double, spaceBefore: UInt64, spaceAfter: UInt64, hardError: Bool,
                 consecutiveFailures: Int, naturalDirection: Bool, dragDownAction: DragDownAction) {
         self.axis = axis
-        self.distance = distance
+        self.progress = progress
         self.spaceBefore = spaceBefore
         self.spaceAfter = spaceAfter
         self.hardError = hardError
@@ -34,7 +35,7 @@ public enum FallbackDecider {
     public static let stickyAfter = 2
 
     public static func decide(_ o: FallbackObservation) -> FallbackVerdict {
-        let committed = abs(o.distance) >= DiscreteStepper.firstStep
+        let committed = ReleaseDecider.looksCommitted(progress: o.progress)
         if !committed && !o.hardError {
             // Too short to tell anything; neither a success nor a failure.
             return FallbackVerdict(catchUpStep: nil, failureCount: o.consecutiveFailures, becameSticky: false)
@@ -53,9 +54,9 @@ public enum FallbackDecider {
     private static func catchUp(for o: FallbackObservation) -> StepCommand? {
         switch o.axis {
         case .horizontal:
-            return DiscreteStepper.horizontalStep(forDistance: o.distance, naturalDirection: o.naturalDirection)
+            return DiscreteStepper.horizontalStep(forDistance: o.progress, naturalDirection: o.naturalDirection)
         case .vertical:
-            if o.distance < 0 { return .missionControl }
+            if o.progress < 0 { return .missionControl }
             switch o.dragDownAction {
             case .appExpose: return .appExpose
             case .showDesktop: return .showDesktop

@@ -14,6 +14,7 @@
 #define GRABBY_HID_TYPE_DOCK_SWIPE      23
 // Field ids are (eventType << 16) | fieldIndex, written as plain numbers because Swift
 // only imports literal macros. 23 = DockSwipe, 9 = Velocity.
+#define GRABBY_HID_FIELD_DOCK_SWIPE_MASK      1507328
 #define GRABBY_HID_FIELD_DOCK_SWIPE_MOTION    1507329
 #define GRABBY_HID_FIELD_DOCK_SWIPE_PROGRESS  1507330
 #define GRABBY_HID_FIELD_DOCK_SWIPE_FLAVOR    1507333

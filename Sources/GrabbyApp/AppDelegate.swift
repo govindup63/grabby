@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let permissions = Permissions()
     private var tapsReady = false
     private var hasAccess = false
+    private var inspectorStarted = false
 
     private var spaces: SpaceObserver!
     private var hotkeys: HotkeyEngine!
@@ -32,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsModel: SettingsModel!
     private var settingsWindow: SettingsWindowController!
     private var onboarding: OnboardingWindowController!
+    private let inspector = GestureInspector()
     private var conflictTimer: Timer?
     /// Only ever touched on the tap thread after construction.
     nonisolated(unsafe) private var controller: GestureController!
@@ -177,6 +179,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 tapsReady = buttonTap.create() && moveTap.create()
             }
             buttonTap.setEnabled(true)
+            if !inspectorStarted { inspectorStarted = inspector.start() }
             let text = tapsReady ? "Grabby is working" : "Could not start event taps"
             statusItem.setStatus(text)
             settingsModel.status = text

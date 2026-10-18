@@ -56,27 +56,41 @@ import Testing
         #expect(h.output.steps.isEmpty)
     }
 
-    @Test func shortDragSnapsBack() {
+    @Test func shortDragStillEndsAndLetsTheDockSlideBack() {
         let h = Harness(settings: smooth.with { $0.throwStrength = 0 })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.drag(dx: -10, dy: 0)
         h.drag(dx: -40, dy: 0)
         h.controller.actionButtonUp()
-        guard case .cancelled? = h.output.calls.last else {
-            Issue.record("expected cancelled for a short drag, got \(h.output.calls)")
+        guard case .ended(let progress, let speed)? = h.output.calls.last else {
+            Issue.record("expected ended, got \(h.output.calls)")
             return
         }
+        #expect(progress < 0)
+        #expect(speed == -ReleaseDecider.minimumNudge)
     }
 
-    @Test func reversedLastDeltaCancels() {
-        let h = Harness(settings: smooth.with { $0.throwStrength = 0.5 })
+    @Test func reversalEndsWithVelocityInTheNewDirection() {
+        let h = Harness(settings: smooth.with { $0.throwStrength = 1 })
         h.controller.actionButtonDown(at: Point(x: 100, y: 100))
         h.drag(dx: -10, dy: 0)
-        h.drag(dx: -20, dy: 0)
-        h.drag(dx: 20, dy: 0)
+        h.drag(dx: -200, dy: 0)
+        h.drag(dx: 150, dy: 0)
         h.controller.actionButtonUp()
+        guard case .ended(_, let speed)? = h.output.calls.last else {
+            Issue.record("expected ended, got \(h.output.calls)")
+            return
+        }
+        #expect(speed > 0)
+    }
+
+    @Test func userCancelSendsCancelled() {
+        let h = Harness(settings: smooth)
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -40, dy: 0)
+        h.controller.cancelGesture()
         guard case .cancelled? = h.output.calls.last else {
-            Issue.record("expected cancelled, got \(String(describing: h.output.calls.last))")
+            Issue.record("expected cancelled, got \(h.output.calls)")
             return
         }
     }
@@ -267,7 +281,7 @@ import Testing
     @Test func hardErrorMidDragCancelsAndCatchesUp() {
         let h = Harness(settings: smooth)
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
-        h.drag(dx: -80, dy: 0)
+        h.drag(dx: -600, dy: 0)
         h.controller.reportHardError()
         guard case .cancelled? = h.output.dockCalls.last else {
             Issue.record("expected cancelled, got \(h.output.calls)")
@@ -291,7 +305,7 @@ import Testing
 @Suite struct GestureControllerThrowTests {
     let base = Settings.defaults.with { $0.switchingStyle = .smooth }
 
-    @Test func zeroThrowFollowsTheMouseAndEndsWhereReleased() {
+    @Test func zeroThrowEndsWhereReleasedWithOnlyADirectionNudge() {
         let h = Harness(settings: base.with { $0.throwStrength = 0 })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.drag(dx: -10, dy: 0)
@@ -304,10 +318,10 @@ import Testing
             return
         }
         #expect(abs(progress - scaler.horizontalProgress(forDelta: -590)) < 1e-9)
-        #expect(speed == 0)
+        #expect(speed == -ReleaseDecider.minimumNudge)
     }
 
-    @Test func fullThrowCarriesPastTheReleasePoint() {
+    @Test func fullThrowReportsRealVelocity() {
         let h = Harness(settings: base.with { $0.throwStrength = 1 })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))
         h.drag(dx: -10, dy: 0)
@@ -318,7 +332,8 @@ import Testing
             Issue.record("expected ended, got \(h.output.calls)")
             return
         }
-        #expect(progress > scaler.horizontalProgress(forDelta: -50))
-        #expect(speed > 0)
+        #expect(abs(progress - scaler.horizontalProgress(forDelta: -50)) < 1e-9)
+        // 40 points in 9 ms on a 1000 point screen is a fast leftward flick.
+        #expect(speed < -1)
     }
 }

@@ -4,8 +4,11 @@ import Foundation
 public struct EventCoalescer {
     public static let interval: Duration = .milliseconds(8)
 
+    public static let velocityWindow: Duration = .milliseconds(80)
+
     private let clock: any GrabbyClock
     private var lastSentAt: Duration = .zero
+    private var samples: [(time: Duration, offset: Double)] = []
     public private(set) var originOffset: Double = 0
     public private(set) var lastDelta: Double = 0
 
@@ -17,6 +20,7 @@ public struct EventCoalescer {
         originOffset = progress
         lastDelta = progress
         lastSentAt = clock.now()
+        samples = [(lastSentAt, progress)]
         return progress
     }
 
@@ -26,6 +30,8 @@ public struct EventCoalescer {
         originOffset += delta
         lastDelta = delta
         let now = clock.now()
+        samples.append((now, originOffset))
+        samples.removeAll { now - $0.time > EventCoalescer.velocityWindow }
         guard now - lastSentAt >= EventCoalescer.interval else { return nil }
         lastSentAt = now
         return originOffset
@@ -33,5 +39,17 @@ public struct EventCoalescer {
 
     public func flushForEnd() -> Double {
         originOffset
+    }
+
+    /// Instantaneous progress per second: the latest sample against the newest sample at least
+    /// 8 ms older, within the last 80 ms. Zero when the hand has been still longer than that.
+    public func velocity(now: Duration) -> Double {
+        let recent = samples.filter { now - $0.time <= EventCoalescer.velocityWindow }
+        guard let last = recent.last else { return 0 }
+        let anchor = recent.last(where: { last.time - $0.time >= EventCoalescer.interval }) ?? recent.first!
+        guard last.time > anchor.time else { return 0 }
+        let span = last.time - anchor.time
+        let seconds = Double(span.components.seconds) + Double(span.components.attoseconds) / 1e18
+        return (last.offset - anchor.offset) / seconds
     }
 }
