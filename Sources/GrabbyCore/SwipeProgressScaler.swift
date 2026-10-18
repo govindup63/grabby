@@ -5,12 +5,13 @@ import Foundation
 public struct SwipeProgressScaler: Sendable {
     public static let spaceSeparatorWidth: Double = 63
 
+    public let offsetForOneSpace: Double
     private let horizontalScale: Double
     private let verticalScale: Double
     private let sign: Double
 
     public init(screen: Size, spaceCount: Int, naturalDirection: Bool) {
-        let offsetForOneSpace = spaceCount <= 1 ? 2.0 : 1.0 + 1.0 / Double(spaceCount - 1)
+        offsetForOneSpace = spaceCount <= 1 ? 2.0 : 1.0 + 1.0 / Double(spaceCount - 1)
         horizontalScale = offsetForOneSpace / (screen.width + SwipeProgressScaler.spaceSeparatorWidth)
         verticalScale = 1.0 / screen.height
         sign = naturalDirection ? -1 : 1

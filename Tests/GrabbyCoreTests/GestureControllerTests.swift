@@ -34,7 +34,7 @@ import Testing
     let smooth = Settings.defaults.with { $0.switchingStyle = .smooth; $0.pinPointer = true }
 
     @Test func horizontalDragBeginsChangesEnds() {
-        let h = Harness(settings: smooth)
+        let h = Harness(settings: smooth.with { $0.throwStrength = 0 })
         h.controller.actionButtonDown(at: Point(x: 100, y: 100))
         h.drag(dx: -10, dy: 0)
         h.drag(dx: -20, dy: 0)
@@ -57,7 +57,7 @@ import Testing
     }
 
     @Test func reversedLastDeltaCancels() {
-        let h = Harness(settings: smooth)
+        let h = Harness(settings: smooth.with { $0.throwStrength = 0.5 })
         h.controller.actionButtonDown(at: Point(x: 100, y: 100))
         h.drag(dx: -10, dy: 0)
         h.drag(dx: -20, dy: 0)
@@ -273,5 +273,40 @@ import Testing
         h.controller.verifySmoothGesture(spaceAfter: 99)
         #expect(h.output.calls.isEmpty)
         #expect(h.controller.stickyFallback == false)
+    }
+}
+
+@Suite struct GestureControllerThrowTests {
+    let base = Settings.defaults.with { $0.switchingStyle = .smooth }
+
+    @Test func zeroThrowFollowsTheMouseAndEndsWhereReleased() {
+        let h = Harness(settings: base.with { $0.throwStrength = 0 })
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -10, dy: 0)
+        h.drag(dx: -40, dy: 0)
+        h.drag(dx: 20, dy: 0)   // reversal would cancel with throw on
+        h.controller.actionButtonUp()
+        let scaler = SwipeProgressScaler(screen: h.spaces.size, spaceCount: h.spaces.count, naturalDirection: false)
+        guard case .ended(let progress, let speed)? = h.output.calls.last else {
+            Issue.record("expected ended, got \(h.output.calls)")
+            return
+        }
+        #expect(abs(progress - scaler.horizontalProgress(forDelta: -30)) < 1e-9)
+        #expect(speed == 0)
+    }
+
+    @Test func fullThrowCarriesPastTheReleasePoint() {
+        let h = Harness(settings: base.with { $0.throwStrength = 1 })
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -10, dy: 0)
+        h.drag(dx: -40, dy: 0)
+        h.controller.actionButtonUp()
+        let scaler = SwipeProgressScaler(screen: h.spaces.size, spaceCount: h.spaces.count, naturalDirection: false)
+        guard case .ended(let progress, let speed)? = h.output.calls.last else {
+            Issue.record("expected ended, got \(h.output.calls)")
+            return
+        }
+        #expect(progress > scaler.horizontalProgress(forDelta: -50))
+        #expect(speed > 0)
     }
 }

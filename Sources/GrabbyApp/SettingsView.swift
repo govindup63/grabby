@@ -57,6 +57,22 @@ struct SettingsView: View {
                     Text("Show Desktop").tag(DragDownAction.showDesktop)
                     Text("Nothing").tag(DragDownAction.none)
                 }
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Throw")
+                        Spacer()
+                        Text(throwLabel).foregroundStyle(.secondary).font(.caption)
+                    }
+                    Slider(value: $model.settings.throwStrength, in: 0...1, step: 0.05) {
+                        Text("Throw")
+                    } minimumValueLabel: {
+                        Image(systemName: "hand.point.up.left").foregroundStyle(.secondary)
+                    } maximumValueLabel: {
+                        Image(systemName: "hand.wave").foregroundStyle(.secondary)
+                    }
+                    Text("At zero the desktop only follows the mouse and stays where you let go. Further right, a quick flick carries it to the next desktop.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
 
             Section("Tap") {
@@ -88,6 +104,14 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 520)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var throwLabel: String {
+        let v = model.settings.throwStrength
+        if v == 0 { return "Follows the mouse" }
+        if v < 0.4 { return "Gentle" }
+        if v < 0.75 { return "Medium" }
+        return "Flick to switch"
     }
 
     private var naturalDirectionBinding: Binding<Int> {

@@ -55,8 +55,11 @@ final class MoveTap: PointerPin, @unchecked Sendable {
 
     /// Must be called on the tap thread.
     func setEnabled(_ enabled: Bool) {
+        lastLocation = nil
         if let t = tap { CGEvent.tapEnable(tap: t, enable: enabled) }
     }
+
+    private var lastLocation: CGPoint?
 
     var isEnabled: Bool {
         thread.sync { [self] in tap.map { CGEvent.tapIsEnabled(tap: $0) } ?? false }
@@ -80,10 +83,20 @@ final class MoveTap: PointerPin, @unchecked Sendable {
         }
         if type == .tapDisabledByUserInput { return Unmanaged.passUnretained(event) }
         if GrabbyEventSource.isOwnEvent(event) { return Unmanaged.passUnretained(event) }
-        let dx = Double(event.getIntegerValueField(.mouseEventDeltaX))
-        let dy = Double(event.getIntegerValueField(.mouseEventDeltaY))
+        // Pointer travel on screen (accelerated points) when the pointer is free, so the desktop moves
+        // as far as the hand does. Raw device counts when pinned, because the pointer does not move.
+        let dx: Double
+        let dy: Double
         if let origin = pinOrigin {
+            dx = Double(event.getIntegerValueField(.mouseEventDeltaX))
+            dy = Double(event.getIntegerValueField(.mouseEventDeltaY))
             CGWarpMouseCursorPosition(origin)
+        } else {
+            let location = event.location
+            let last = lastLocation ?? location
+            dx = location.x - last.x
+            dy = location.y - last.y
+            lastLocation = location
         }
         onMove?(dx, dy)
         return Unmanaged.passUnretained(event)

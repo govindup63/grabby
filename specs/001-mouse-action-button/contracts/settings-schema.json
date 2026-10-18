@@ -36,6 +36,7 @@
       "description": "null follows the system natural scrolling setting at launch."
     },
     "pinPointer": { "type": "boolean", "default": false },
+    "throwStrength": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.35, "description": "0 follows the mouse only; 1 lets a flick carry up to 60 percent of a desktop." },
     "launchAtLogin": { "type": "boolean", "default": false }
   },
   "examples": [

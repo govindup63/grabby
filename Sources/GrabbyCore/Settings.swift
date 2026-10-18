@@ -16,6 +16,8 @@ public struct Settings: Codable, Sendable, Equatable {
     public var naturalDirection: Bool?
     public var pinPointer: Bool
     public var launchAtLogin: Bool
+    /// 0 = the desktop only follows the mouse; 1 = a quick flick carries it most of a desktop.
+    public var throwStrength: Double
 
     public static let defaults = Settings(
         schemaVersion: currentSchemaVersion,
@@ -25,12 +27,13 @@ public struct Settings: Codable, Sendable, Equatable {
         tapAction: .missionControl,
         naturalDirection: nil,
         pinPointer: false,
-        launchAtLogin: false
+        launchAtLogin: false,
+        throwStrength: 0.35
     )
 
     public init(schemaVersion: Int, actionButton: Int?, switchingStyle: SwitchingStyle,
                 dragDownAction: DragDownAction, tapAction: TapAction, naturalDirection: Bool?,
-                pinPointer: Bool, launchAtLogin: Bool) {
+                pinPointer: Bool, launchAtLogin: Bool, throwStrength: Double) {
         self.schemaVersion = schemaVersion
         self.actionButton = actionButton
         self.switchingStyle = switchingStyle
@@ -39,6 +42,7 @@ public struct Settings: Codable, Sendable, Equatable {
         self.naturalDirection = naturalDirection
         self.pinPointer = pinPointer
         self.launchAtLogin = launchAtLogin
+        self.throwStrength = throwStrength
     }
 
     public init(from decoder: Decoder) throws {
@@ -52,12 +56,15 @@ public struct Settings: Codable, Sendable, Equatable {
         naturalDirection = try c.decodeIfPresent(Bool.self, forKey: .naturalDirection) ?? d.naturalDirection
         pinPointer = try c.decodeIfPresent(Bool.self, forKey: .pinPointer) ?? d.pinPointer
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
+        throwStrength = try c.decodeIfPresent(Double.self, forKey: .throwStrength) ?? d.throwStrength
     }
 
     public func validated() throws -> Settings {
         if let b = actionButton, !Settings.validButtons.contains(b) {
             throw SettingsError.invalidButton
         }
-        return self
+        var copy = self
+        copy.throwStrength = min(1, max(0, throwStrength))
+        return copy
     }
 }

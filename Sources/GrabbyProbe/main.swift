@@ -125,7 +125,7 @@ for _ in 0..<options.repeatCount {
         dock.post(axis: .horizontal, phase: .changed, progress: progress)
     }
     let lastDelta = sign * (1.0 / Double(steps))
-    dock.post(axis: .horizontal, phase: .ended, progress: progress, exitSpeed: EndPhaseDecider.exitSpeed(lastDelta: lastDelta))
+    dock.post(axis: .horizontal, phase: .ended, progress: progress, exitSpeed: EndPhaseDecider.exitSpeed(lastDelta: lastDelta, throwStrength: 1))
     usleep(400_000)
     let after = spaces.activeSpace()
     report(direction: direction.rawValue, before: before, after: after, elapsedMs: Int(Date().timeIntervalSince(start) * 1000))

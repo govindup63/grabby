@@ -13,6 +13,15 @@ import Testing
         #expect(s.naturalDirection == nil)
         #expect(s.pinPointer == false)
         #expect(s.launchAtLogin == false)
+        #expect(s.throwStrength == 0.35)
+    }
+
+    @Test func validatedClampsThrowStrength() throws {
+        var s = Settings.defaults
+        s.throwStrength = 1.7
+        #expect(try s.validated().throwStrength == 1.0)
+        s.throwStrength = -0.2
+        #expect(try s.validated().throwStrength == 0.0)
     }
 
     @Test func jsonRoundTrip() throws {
@@ -54,6 +63,7 @@ import Testing
         #expect(s.tapAction == .none)
         #expect(s.dragDownAction == .appExpose)
         #expect(s.pinPointer == false)
+        #expect(s.throwStrength == 0.35)
         #expect(s.switchingStyle == .smooth)
     }
 
