@@ -1,12 +1,21 @@
 // swift-tools-version: 6.0
 import PackageDescription
 
-// Swift Testing ships with the Command Line Tools but the toolchain does not pass its
-// macro plugin path or runtime search paths, so the test target supplies them.
+import Foundation
+
+// With only the Command Line Tools installed (no Xcode), the toolchain does not pass Swift
+// Testing's macro plugin path or runtime search paths, so the test target supplies them.
+// On a machine with Xcode these paths do not exist and nothing is added.
 let cltRoot = "/Library/Developer/CommandLineTools"
 let testingPlugins = "\(cltRoot)/usr/lib/swift/host/plugins/testing"
 let testingFrameworks = "\(cltRoot)/Library/Developer/Frameworks"
 let testingLibs = "\(cltRoot)/Library/Developer/usr/lib"
+let usesCommandLineToolsOnly = FileManager.default.fileExists(atPath: testingPlugins)
+let testSwiftSettings: [SwiftSetting] = usesCommandLineToolsOnly ? [.unsafeFlags(["-plugin-path", testingPlugins])] : []
+let testLinkerSettings: [LinkerSetting] = usesCommandLineToolsOnly ? [.unsafeFlags([
+    "-Xlinker", "-rpath", "-Xlinker", testingFrameworks,
+    "-Xlinker", "-rpath", "-Xlinker", testingLibs,
+])] : []
 
 let package = Package(
     name: "Grabby",
@@ -44,11 +53,8 @@ let package = Package(
         .testTarget(
             name: "GrabbyCoreTests",
             dependencies: ["GrabbyCore"],
-            swiftSettings: [.unsafeFlags(["-plugin-path", testingPlugins])],
-            linkerSettings: [.unsafeFlags([
-                "-Xlinker", "-rpath", "-Xlinker", testingFrameworks,
-                "-Xlinker", "-rpath", "-Xlinker", testingLibs,
-            ])]
+            swiftSettings: testSwiftSettings,
+            linkerSettings: testLinkerSettings
         ),
     ]
 )

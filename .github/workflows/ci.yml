@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and test (macOS)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Build
+        run: swift build -c release
+
+      - name: Test
+        run: swift test
+
+      - name: Bundle (ad hoc signed)
+        env:
+          GRABBY_SIGN_IDENTITY: "-"
+        run: scripts/bundle.sh
+
+      - name: Upload app for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: Grabby.app
+          path: build/Grabby.app
+          retention-days: 7
