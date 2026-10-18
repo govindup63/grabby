@@ -40,20 +40,7 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Hold and move") {
-                Picker("Holding the button", selection: $model.settings.holdAction) {
-                    Text("Moves the window under the pointer").tag(HoldAction.moveWindow)
-                    Text("Switches desktops and opens Mission Control").tag(HoldAction.switchDesktops)
-                }
-                .pickerStyle(.radioGroup)
-                if model.settings.holdAction == .moveWindow {
-                    Text("Like three-finger drag on a trackpad: hold, and the window follows the mouse in any direction until you let go.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-            }
-
-            if model.settings.holdAction == .switchDesktops {
-            Section("Desktop switching") {
+            Section("Drag") {
                 Picker("Switching style", selection: $model.settings.switchingStyle) {
                     Text("Smooth (follows the pointer)").tag(SwitchingStyle.smooth)
                     Text("Keyboard shortcut (one desktop per step)").tag(SwitchingStyle.keyboard)
@@ -70,8 +57,6 @@ struct SettingsView: View {
                     Text("Show Desktop").tag(DragDownAction.showDesktop)
                     Text("Nothing").tag(DragDownAction.none)
                 }
-                Toggle("Keep pointer in place while switching", isOn: $model.settings.pinPointer)
-            }
             }
 
             Section("Tap") {
@@ -85,6 +70,7 @@ struct SettingsView: View {
             }
 
             Section("General") {
+                Toggle("Keep pointer in place while dragging", isOn: $model.settings.pinPointer)
                 Toggle("Launch at login", isOn: $model.settings.launchAtLogin)
                 if let error = model.launchAtLoginError {
                     Text(error).font(.caption).foregroundStyle(.red)

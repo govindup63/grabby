@@ -63,8 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.controller.reportHardError()
         }
         controller = GestureController(settings: settings, smoothAvailable: smoothAvailable, clock: MonotonicClock(),
-                                       output: output, spaces: spaces, pointer: moveTap,
-                                       windows: AXWindowMover(), notifier: notifier)
+                                       output: output, spaces: spaces, pointer: moveTap, notifier: notifier)
         controller.systemNaturalDirection = UserDefaults.standard.object(forKey: "com.apple.swipescrolldirection") as? Bool ?? true
         wireTaps()
 

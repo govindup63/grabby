@@ -10,7 +10,6 @@ public struct Settings: Codable, Sendable, Equatable {
 
     public var schemaVersion: Int
     public var actionButton: Int?
-    public var holdAction: HoldAction
     public var switchingStyle: SwitchingStyle
     public var dragDownAction: DragDownAction
     public var tapAction: TapAction
@@ -21,8 +20,7 @@ public struct Settings: Codable, Sendable, Equatable {
     public static let defaults = Settings(
         schemaVersion: currentSchemaVersion,
         actionButton: nil,
-        holdAction: .moveWindow,
-        switchingStyle: .keyboard,
+        switchingStyle: .smooth,
         dragDownAction: .appExpose,
         tapAction: .missionControl,
         naturalDirection: nil,
@@ -30,12 +28,11 @@ public struct Settings: Codable, Sendable, Equatable {
         launchAtLogin: false
     )
 
-    public init(schemaVersion: Int, actionButton: Int?, holdAction: HoldAction, switchingStyle: SwitchingStyle,
+    public init(schemaVersion: Int, actionButton: Int?, switchingStyle: SwitchingStyle,
                 dragDownAction: DragDownAction, tapAction: TapAction, naturalDirection: Bool?,
                 pinPointer: Bool, launchAtLogin: Bool) {
         self.schemaVersion = schemaVersion
         self.actionButton = actionButton
-        self.holdAction = holdAction
         self.switchingStyle = switchingStyle
         self.dragDownAction = dragDownAction
         self.tapAction = tapAction
@@ -49,7 +46,6 @@ public struct Settings: Codable, Sendable, Equatable {
         let d = Settings.defaults
         schemaVersion = try c.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? d.schemaVersion
         actionButton = try c.decodeIfPresent(Int.self, forKey: .actionButton) ?? d.actionButton
-        holdAction = try c.decodeIfPresent(HoldAction.self, forKey: .holdAction) ?? d.holdAction
         switchingStyle = try c.decodeIfPresent(SwitchingStyle.self, forKey: .switchingStyle) ?? d.switchingStyle
         dragDownAction = try c.decodeIfPresent(DragDownAction.self, forKey: .dragDownAction) ?? d.dragDownAction
         tapAction = try c.decodeIfPresent(TapAction.self, forKey: .tapAction) ?? d.tapAction

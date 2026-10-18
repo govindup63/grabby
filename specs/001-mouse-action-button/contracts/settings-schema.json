@@ -18,7 +18,7 @@
     "switchingStyle": {
       "type": "string",
       "enum": ["smooth", "keyboard"],
-      "default": "keyboard"
+      "default": "smooth"
     },
     "dragDownAction": {
       "type": "string",

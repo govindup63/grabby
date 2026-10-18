@@ -17,6 +17,7 @@ final class Permissions {
             return false
         }
         CGEvent.tapEnable(tap: tap, enable: false)
+        CFMachPortInvalidate(tap)
         return true
     }
 
