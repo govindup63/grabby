@@ -32,6 +32,7 @@
       "default": 0.35,
       "description": "0: the release position decides. 1: the hand's speed at release counts fully."
     },
+    "showTrail": { "type": "boolean", "default": true, "description": "Glowing pointer trail while the action button is held." },
     "launchAtLogin": { "type": "boolean", "default": false }
   }
 }

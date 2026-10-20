@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return w
     }()
     private var settingsWindowBuilt = false
+    private let trail = TrailOverlay()
     private var onboardingShown = false
     private let inspector = GestureInspector()
     private var inspectorStarted = false
@@ -139,16 +140,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let controller = self.controller!
         let moveTap = self.moveTap!
         let comboTap = self.comboTap!
+        let trail = self.trail
         buttonTap.onDown = { location in
             moveTap.setEnabled(true)
             comboTap.setEnabled(true)
             controller.actionButtonDown(at: Point(x: location.x, y: location.y))
+            if controller.settings.showTrail {
+                trail.record(location)
+                DispatchQueue.main.async { trail.begin() }
+            }
         }
         comboTap.onClick = { button in
             controller.comboClick(button == .left ? .left : .right)
         }
-        moveTap.onMove = { dx, dy in
+        moveTap.onMove = { dx, dy, location in
             controller.pointerMoved(dx: dx, dy: dy)
+            if controller.settings.showTrail { trail.record(location) }
         }
         let spaces = self.spaces!
         let tapThread = self.tapThread
@@ -156,6 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.actionButtonUp()
             moveTap.setEnabled(false)
             comboTap.setEnabled(false)
+            DispatchQueue.main.async { trail.end() }
             if controller.lastTapWasPassThrough, let button = controller.settings.actionButton {
                 self?.replayClick(button: button)
             }

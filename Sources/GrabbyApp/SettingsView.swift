@@ -79,6 +79,7 @@ struct SettingsView: View {
             }
 
             Section("General") {
+                Toggle("Show a glowing trail behind the pointer while holding", isOn: $model.settings.showTrail)
                 Toggle("Launch at login", isOn: $model.settings.launchAtLogin)
                 if let error = model.launchAtLoginError {
                     Text(error).font(.caption).foregroundStyle(.red)
