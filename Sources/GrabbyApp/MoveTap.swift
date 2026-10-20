@@ -9,7 +9,7 @@ final class MoveTap: @unchecked Sendable {
     private var source: CFRunLoopSource?
     private var lastLocation: CGPoint?
 
-    var onMove: (@Sendable (Double, Double, CGPoint) -> Void)?
+    var onMove: (@Sendable (Double, Double) -> Void)?
 
     init(thread: TapThread) {
         self.thread = thread
@@ -64,7 +64,7 @@ final class MoveTap: @unchecked Sendable {
         let location = event.location
         let last = lastLocation ?? location
         lastLocation = location
-        onMove?(location.x - last.x, location.y - last.y, location)
+        onMove?(location.x - last.x, location.y - last.y)
         return Unmanaged.passUnretained(event)
     }
 }

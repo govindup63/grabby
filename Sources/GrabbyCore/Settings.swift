@@ -15,8 +15,6 @@ public struct Settings: Codable, Sendable, Equatable {
     public var naturalDirection: Bool?
     /// 0 = where you let go decides; 1 = the speed of the hand at release counts fully.
     public var throwStrength: Double
-    /// Draw a glowing line behind the pointer while the action button is held.
-    public var showTrail: Bool
     public var launchAtLogin: Bool
 
     public static let defaults = Settings(
@@ -25,18 +23,16 @@ public struct Settings: Codable, Sendable, Equatable {
         tapAction: .none,
         naturalDirection: nil,
         throwStrength: 0.35,
-        showTrail: true,
         launchAtLogin: false
     )
 
     public init(schemaVersion: Int, actionButton: Int?, tapAction: TapAction, naturalDirection: Bool?,
-                throwStrength: Double, showTrail: Bool, launchAtLogin: Bool) {
+                throwStrength: Double, launchAtLogin: Bool) {
         self.schemaVersion = schemaVersion
         self.actionButton = actionButton
         self.tapAction = tapAction
         self.naturalDirection = naturalDirection
         self.throwStrength = throwStrength
-        self.showTrail = showTrail
         self.launchAtLogin = launchAtLogin
     }
 
@@ -48,7 +44,6 @@ public struct Settings: Codable, Sendable, Equatable {
         tapAction = try c.decodeIfPresent(TapAction.self, forKey: .tapAction) ?? d.tapAction
         naturalDirection = try c.decodeIfPresent(Bool.self, forKey: .naturalDirection) ?? d.naturalDirection
         throwStrength = try c.decodeIfPresent(Double.self, forKey: .throwStrength) ?? d.throwStrength
-        showTrail = try c.decodeIfPresent(Bool.self, forKey: .showTrail) ?? d.showTrail
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
     }
 

@@ -2,12 +2,6 @@
 
 All notable changes to Grabby. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
-
-### Added
-
-- A glowing trail behind the pointer while the action button is held, in the icon's colours, fading over half a second. On by default; toggle in Settings, General.
-
 ## [0.1.0] - 2026-10-18
 
 First release.

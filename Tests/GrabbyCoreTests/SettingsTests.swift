@@ -11,7 +11,6 @@ import Testing
         #expect(s.naturalDirection == nil)
         #expect(s.launchAtLogin == false)
         #expect(s.throwStrength == 0.35)
-        #expect(s.showTrail == true)
     }
 
     @Test func validatedClampsThrowStrength() throws {
@@ -61,7 +60,6 @@ import Testing
         #expect(s.tapAction == .appExpose)
         #expect(s.throwStrength == 0.35)
         #expect(s.naturalDirection == nil)
-        #expect(s.showTrail == true)
     }
 
     @Test func storeReturnsDefaultsWhenFileMissing() {
