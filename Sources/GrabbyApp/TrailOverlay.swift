@@ -1,21 +1,30 @@
 import AppKit
 import GrabbyCore
 
-/// Draws a glowing comet behind the pointer while the action button is held.
-///
-/// One transparent, click-through window per display, each exactly the size of its screen. A
-/// single window spanning displays with different scale factors is rendered at one scale and
-/// lands the drawing in the wrong place on the other display, so every screen gets its own.
-/// Samples arrive from the tap thread through a locked inbox; the main thread redraws at 60 Hz
-/// only while there is something to draw, then hides the windows.
+/// A transparent, click-through window over every display that draws a glowing line behind the
+/// pointer while the action button is held. Points arrive from the tap thread; drawing happens on
+/// the main thread at 60 Hz only while there is something to draw.
 @MainActor
 final class TrailOverlay {
-    private var overlays: [ScreenOverlay] = []
+    private let window: NSWindow
+    private let view = TrailView()
     private let inbox = PointInbox()
     private var trail = CursorTrail()
     private var timer: Timer?
     private var holding = false
     private let clock = MonotonicClock()
+
+    init() {
+        window = NSWindow(contentRect: .zero, styleMask: .borderless, backing: .buffered, defer: false)
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = false
+        window.ignoresMouseEvents = true
+        window.level = .screenSaver
+        window.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+        window.isReleasedWhenClosed = false
+        window.contentView = view
+    }
 
     /// Called from any thread with a pointer location in CoreGraphics (top-left origin) coordinates.
     nonisolated func record(_ location: CGPoint) {
@@ -24,8 +33,10 @@ final class TrailOverlay {
 
     func begin() {
         holding = true
-        rebuildOverlaysIfScreensChanged()
-        overlays.forEach { $0.show() }
+        let frame = NSScreen.screens.reduce(CGRect.null) { $0.union($1.frame) }
+        window.setFrame(frame, display: false)
+        view.frame = CGRect(origin: .zero, size: frame.size)
+        window.orderFrontRegardless()
         if timer == nil {
             let t = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
                 Task { @MainActor in self?.tick() }
@@ -39,13 +50,6 @@ final class TrailOverlay {
         holding = false
     }
 
-    private func rebuildOverlaysIfScreensChanged() {
-        let frames = NSScreen.screens.map(\.frame)
-        if overlays.map(\.screenFrame) == frames { return }
-        overlays.forEach { $0.hide() }
-        overlays = NSScreen.screens.map { ScreenOverlay(screen: $0) }
-    }
-
     private func tick() {
         let now = clock.now()
         let drained = inbox.drain()
@@ -53,65 +57,24 @@ final class TrailOverlay {
             for (p, t) in drained { trail.append(Point(x: p.x, y: p.y), at: t) }
         }
         let segments = trail.segments(now: now)
-        // CoreGraphics global (top-left origin) to AppKit global (bottom-left origin of the primary screen).
-        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
-        let lines = segments.map { seg in
-            TrailView.Line(from: CGPoint(x: seg.from.x, y: primaryHeight - seg.from.y),
-                           to: CGPoint(x: seg.to.x, y: primaryHeight - seg.to.y),
-                           alpha: seg.alpha)
+        view.segments = segments.map { seg in
+            TrailView.Line(from: convert(seg.from), to: convert(seg.to), alpha: seg.alpha)
         }
-        overlays.forEach { $0.render(lines) }
+        view.needsDisplay = true
         if !holding && segments.isEmpty {
             timer?.invalidate()
             timer = nil
             trail.clear()
             _ = inbox.drain()
-            overlays.forEach { $0.hide() }
+            window.orderOut(nil)
         }
     }
-}
 
-/// One click-through window covering one display.
-@MainActor
-private final class ScreenOverlay {
-    let screenFrame: CGRect
-    private let window: NSWindow
-    private let view = TrailView()
-
-    init(screen: NSScreen) {
-        screenFrame = screen.frame
-        window = NSWindow(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false)
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.hasShadow = false
-        window.ignoresMouseEvents = true
-        window.level = .screenSaver
-        window.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
-        window.isReleasedWhenClosed = false
-        window.animationBehavior = .none
-        view.frame = CGRect(origin: .zero, size: screen.frame.size)
-        window.contentView = view
-    }
-
-    func show() {
-        window.setFrame(screenFrame, display: false)
-        window.orderFrontRegardless()
-    }
-
-    func hide() {
-        view.lines = []
-        window.orderOut(nil)
-    }
-
-    /// Lines are in AppKit global coordinates; shift them into this window's own space.
-    func render(_ lines: [TrailView.Line]) {
-        let origin = screenFrame.origin
-        view.lines = lines.map {
-            TrailView.Line(from: CGPoint(x: $0.from.x - origin.x, y: $0.from.y - origin.y),
-                           to: CGPoint(x: $0.to.x - origin.x, y: $0.to.y - origin.y),
-                           alpha: $0.alpha)
-        }
-        view.needsDisplay = true
+    /// CoreGraphics global (top-left origin) to this window's view coordinates (bottom-left origin).
+    private func convert(_ p: Point) -> CGPoint {
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        let screenPoint = CGPoint(x: p.x, y: primaryHeight - p.y)
+        return CGPoint(x: screenPoint.x - window.frame.minX, y: screenPoint.y - window.frame.minY)
     }
 }
 
@@ -133,29 +96,28 @@ final class TrailView: NSView {
     struct Line {
         var from: CGPoint
         var to: CGPoint
-        /// 1 at the pointer, 0 at the end of the tail.
         var alpha: Double
     }
 
-    var lines: [Line] = []
+    var segments: [Line] = []
 
     override var isOpaque: Bool { false }
 
     override func draw(_ dirtyRect: NSRect) {
-        guard !lines.isEmpty, let ctx = NSGraphicsContext.current?.cgContext else { return }
+        guard !segments.isEmpty, let ctx = NSGraphicsContext.current?.cgContext else { return }
         ctx.setLineCap(.round)
         ctx.setLineJoin(.round)
-        // A comet: wide, bright and orange at the head; thin, faint and pink at the tail.
-        // Pass 1 is a soft halo, pass 2 the crisp core.
-        for pass in 0..<2 {
-            let glow = pass == 0
-            for line in lines {
+        // The icon's palette: warm orange at the head, pink-red along the tail. Two passes: a wide
+        // soft glow, then the crisp core line.
+        for (width, glow) in [(CGFloat(14), true), (CGFloat(4), false)] {
+            for line in segments {
                 let t = CGFloat(line.alpha)
-                let eased = t * t
-                let g: CGFloat = 0.24 + 0.30 * t
-                let b: CGFloat = 0.47 - 0.23 * t
-                ctx.setStrokeColor(CGColor(red: 1.0, green: g, blue: b, alpha: glow ? 0.22 * eased : 0.95 * eased))
-                ctx.setLineWidth((glow ? 18 : 5) * (0.15 + 0.85 * t))
+                let r: CGFloat = 1.0
+                let g: CGFloat = 0.24 + 0.30 * t   // 0.24 (pink) to 0.54 (orange)
+                let b: CGFloat = 0.47 - 0.23 * t   // 0.47 to 0.24
+                let a: CGFloat = glow ? 0.28 * t : 0.95 * t
+                ctx.setStrokeColor(CGColor(red: r, green: g, blue: b, alpha: a))
+                ctx.setLineWidth(width * (0.6 + 0.4 * t))
                 ctx.move(to: line.from)
                 ctx.addLine(to: line.to)
                 ctx.strokePath()
