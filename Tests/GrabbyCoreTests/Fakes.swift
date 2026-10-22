@@ -51,8 +51,8 @@ struct Harness {
     let notifier = FakeNotifier()
     let controller: GestureController
 
-    init(settings: Settings = .defaults, smoothAvailable: Bool = true) {
-        controller = GestureController(settings: settings, smoothAvailable: smoothAvailable, clock: clock,
+    init(settings: Settings = .defaults, smoothAvailable: Bool = true, format: DockSwipeFormat = .hidEvent) {
+        controller = GestureController(settings: settings, smoothAvailable: smoothAvailable, format: format, clock: clock,
                                        output: output, spaces: spaces, notifier: notifier)
     }
 

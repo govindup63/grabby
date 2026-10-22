@@ -52,7 +52,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings = store.load()
         Log.settings.info("Loaded settings: button=\(self.settings.actionButton.map(String.init) ?? "nil")")
 
-        smoothAvailable = withUnsafePointer(to: &privateAPI) { grabby_private_all_present($0) }
+        dock = DockSwipeEngine(api: privateAPI)
+        smoothAvailable = dock.available
+        Log.engine.info("Dock Swipe format: \(String(describing: self.dock.format))")
         for i in 0..<Int(GRABBY_PRIVATE_SYMBOL_COUNT) where !withUnsafePointer(to: &privateAPI, { grabby_private_symbol_present($0, Int32(i)) }) {
             Log.engine.error("Private symbol missing: \(String(cString: grabby_private_symbol_name(Int32(i))))")
         }
@@ -69,15 +71,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         spaces = SpaceObserver(api: privateAPI)
         hotkeys = HotkeyEngine(api: privateAPI)
-        dock = DockSwipeEngine(api: privateAPI)
         output = EngineOutput(dock: dock, hotkeys: hotkeys) { [weak self] in
             Log.engine.error("Smooth engine hard failure, switching this gesture to the keyboard path")
             self?.controller.reportHardError()
         }
-        controller = GestureController(settings: settings, smoothAvailable: smoothAvailable, clock: MonotonicClock(),
+        controller = GestureController(settings: settings, smoothAvailable: smoothAvailable, format: dock.format, clock: MonotonicClock(),
                                        output: output, spaces: spaces, notifier: notifier)
         controller.onTrace = { Trace.log($0) }
         controller.systemNaturalDirection = UserDefaults.standard.object(forKey: "com.apple.swipescrolldirection") as? Bool ?? true
+        dock.naturalDirection = settings.naturalDirection ?? controller.systemNaturalDirection
         wireTaps()
 
         settingsModel = SettingsModel(settings: settings, store: store) { [weak self] updated in
@@ -131,6 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func apply(_ updated: Settings) {
         settings = updated
         buttonTap.actionButton = updated.actionButton
+        dock.naturalDirection = updated.naturalDirection ?? controller.systemNaturalDirection
         tapThread.async { [controller] in controller?.settings = updated }
         Log.settings.info("Applied settings: button=\(updated.actionButton.map(String.init) ?? "nil") tap=\(updated.tapAction.rawValue)")
     }

@@ -85,6 +85,16 @@ import Testing
         #expect(changes.count == 1)
     }
 
+    @Test func legacyFormatScalesAndSignsLikeMacMouseFix() {
+        let h = Harness(format: .legacyFields)
+        h.controller.actionButtonDown(at: Point(x: 0, y: 0))
+        h.drag(dx: -10, dy: 0)
+        let legacy = SwipeProgressScaler(screen: h.spaces.size, spaceCount: h.spaces.count, naturalDirection: false, format: .legacyFields)
+        #expect(h.output.calls.first == .began(.horizontal, legacy.horizontalProgress(forDelta: -10)))
+        guard case .began(_, let p)? = h.output.calls.first else { return }
+        #expect(p > 0)   // Mac Mouse Fix's sign: leftward motion is positive on the legacy path
+    }
+
     @Test func shortDragStillEndsAndLetsTheDockSlideBack() {
         let h = Harness(settings: .defaults.with { $0.throwStrength = 0 })
         h.controller.actionButtonDown(at: Point(x: 0, y: 0))

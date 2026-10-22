@@ -15,6 +15,7 @@ public final class GestureController: @unchecked Sendable {
     public var onTrace: ((String) -> Void)?
 
     private let smoothAvailable: Bool
+    private let format: DockSwipeFormat
     private let clock: any GrabbyClock
     private let output: any GestureOutput
     private let spaces: any SpaceReader
@@ -36,10 +37,11 @@ public final class GestureController: @unchecked Sendable {
     private var consecutiveFailures = 0
     private var noticeShown = false
 
-    public init(settings: Settings, smoothAvailable: Bool, clock: any GrabbyClock,
+    public init(settings: Settings, smoothAvailable: Bool, format: DockSwipeFormat = .hidEvent, clock: any GrabbyClock,
                 output: any GestureOutput, spaces: any SpaceReader, notifier: any UserNotifier) {
         self.settings = settings
         self.smoothAvailable = smoothAvailable
+        self.format = format
         self.clock = clock
         self.output = output
         self.spaces = spaces
@@ -150,7 +152,8 @@ public final class GestureController: @unchecked Sendable {
         if useSmooth {
             let scaler = SwipeProgressScaler(screen: spaces.screenSize(),
                                              spaceCount: spaces.spaceCount(onDisplayUnderPointer: true),
-                                             naturalDirection: userNaturalDirection != systemNaturalDirection)
+                                             naturalDirection: userNaturalDirection != systemNaturalDirection,
+                                             format: format)
             var coalescer = EventCoalescer(clock: clock, interval: spaces.refreshInterval())
             let sent = coalescer.began(progress: progress(for: distance, axis: axis, scaler: scaler))
             spaceBefore = spaces.activeSpace()

@@ -2,6 +2,12 @@
 
 All notable changes to Grabby. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.3] - 2026-10-23
+
+### Fixed
+
+- Desktop sliding did nothing on macOS 26: the app only knew the macOS 27 event format. On macOS 26 and earlier it now sends the older field-based format that Mac Mouse Fix ships for those versions, with that format's scale and direction rules. This path has not been verified on real hardware by the project yet; report direction or speed problems with the macOS version.
+
 ## [0.1.2] - 2026-10-23
 
 ### Fixed

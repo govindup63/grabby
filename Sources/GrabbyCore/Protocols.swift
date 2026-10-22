@@ -4,6 +4,14 @@ public enum Axis: Sendable, Equatable {
     case horizontal, vertical
 }
 
+/// How the Dock expects a synthetic three-finger swipe to be encoded.
+public enum DockSwipeFormat: Sendable, Equatable {
+    /// macOS 27 and later: an IOHIDEvent attached to the CGEvent. Measured on real hardware.
+    case hidEvent
+    /// macOS 26 and earlier: undocumented CGEvent fields, Mac Mouse Fix's shipped recipe.
+    case legacyFields
+}
+
 public enum StepCommand: Sendable, Equatable {
     case moveSpaceLeft, moveSpaceRight, missionControl, appExpose, showDesktop
     /// The system's area screenshot (what Command Shift 4 is bound to).

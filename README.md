@@ -46,7 +46,7 @@ Grabby is distributed outside the Mac App Store because it needs Accessibility a
 
 If your mouse software (Logitech G HUB, Logi Options+, BetterMouse) has an assignment on that button, set it back to default there, or the click never reaches Grabby. Settings shows a notice when one of these is running.
 
-Or build it yourself; see Development below. Needs macOS 26 or later; built and tested on macOS 27.
+Or build it yourself; see Development below. Needs macOS 26 or later. Built and tested on macOS 27; on macOS 26 the gesture uses the older event format and has had less testing.
 
 ## Settings
 
