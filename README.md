@@ -41,7 +41,7 @@ Grabby is distributed outside the Mac App Store because it needs Accessibility a
 
 1. Download `Grabby.app.zip` from the [latest release](https://github.com/govindup63/grabby/releases/latest) and unzip it into `/Applications`.
 2. Open it. Releases are signed ad hoc, so the first launch needs a right-click, Open.
-3. Grabby asks for Accessibility access and opens System Settings for you. Turn it on; Grabby starts working within a couple of seconds, no relaunch.
+3. Grabby asks for Accessibility access. Turn it on in System Settings > Privacy & Security > Accessibility (if Grabby is not listed, add it with the + button); Grabby starts working within a couple of seconds, no relaunch.
 4. In Settings (menu bar icon, Settings...), press Change and press the mouse button you want. Left and right are refused.
 
 If your mouse software (Logitech G HUB, Logi Options+, BetterMouse) has an assignment on that button, set it back to default there, or the click never reaches Grabby. Settings shows a notice when one of these is running.

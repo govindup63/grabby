@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import CoreGraphics
 import GrabbyEngines
 
@@ -19,6 +20,18 @@ final class Permissions {
         CGEvent.tapEnable(tap: tap, enable: false)
         CFMachPortInvalidate(tap)
         return true
+    }
+
+    /// Registers Grabby in System Settings > Privacy & Security > Accessibility (with the switch off)
+    /// and shows the system's own prompt. Without this the app never appears in that list; a failed
+    /// tap creation does not register it. Returns true if already trusted.
+    @discardableResult
+    nonisolated static func requestAccess() -> Bool {
+        // The literal key string avoids touching the non-Sendable global kAXTrustedCheckOptionPrompt.
+        let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
+        let trusted = AXIsProcessTrustedWithOptions(options)
+        Log.permission.info("Requested Accessibility access, trusted=\(trusted)")
+        return trusted
     }
 
     nonisolated static func openAccessibilityPane() {

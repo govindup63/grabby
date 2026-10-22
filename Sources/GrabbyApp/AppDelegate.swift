@@ -39,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }()
     private var settingsWindowBuilt = false
     private var onboardingShown = false
+    private var accessRequested = false
     private let inspector = GestureInspector()
     private var inspectorStarted = false
     private lazy var onboarding = OnboardingWindowController()
@@ -207,6 +208,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             statusItem.setStatus("Needs Accessibility access")
             settingsModel.status = "Needs Accessibility access"
+            if !accessRequested {
+                accessRequested = true
+                Permissions.requestAccess()
+            }
             onboardingShown = true
             onboarding.show()
             Log.permission.error("Accessibility access missing")

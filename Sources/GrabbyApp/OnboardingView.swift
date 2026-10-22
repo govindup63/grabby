@@ -12,7 +12,7 @@ struct OnboardingView: View {
             }
             Text("Grabby watches one mouse button and, while you hold it, turns mouse movement into desktop switching and Mission Control. macOS only lets an app see and send mouse input after you allow it under Accessibility.")
                 .fixedSize(horizontal: false, vertical: true)
-            Text("1. Click the button below.\n2. Find Grabby in the list and turn it on.\n3. Come back here. Grabby starts working as soon as access is granted, no relaunch needed.")
+            Text("1. Click the button below.\n2. Find Grabby in the list and turn it on. If it is not listed, click the + button under the list and choose Grabby from Applications.\n3. Come back here. Grabby starts working as soon as access is granted, no relaunch needed.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack {

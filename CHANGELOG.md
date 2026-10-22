@@ -2,6 +2,12 @@
 
 All notable changes to Grabby. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.2] - 2026-10-23
+
+### Fixed
+
+- On a fresh Mac, Grabby did not appear in System Settings > Privacy & Security > Accessibility, so there was nothing to switch on. It now asks macOS for access at launch, which adds it to the list and shows the system prompt. The onboarding text also explains the + button.
+
 ## [0.1.1] - 2026-10-23
 
 Same gestures as 0.1.0; this release carries the app identity and the project tooling.
