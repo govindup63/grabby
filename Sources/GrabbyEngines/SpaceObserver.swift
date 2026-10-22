@@ -8,6 +8,18 @@ import GrabbyPrivate
 /// Uses CoreGraphics only so it is safe to call from the tap thread.
 public final class SpaceObserver: SpaceReader, @unchecked Sendable {
     private let api: grabby_private_api
+    private let lock = NSLock()
+    private var lastPointer: CGPoint?
+
+    /// Called by the taps with each event's location, so no system round trip is ever needed
+    /// to know where the pointer is.
+    public func notePointer(_ location: CGPoint) {
+        lock.withLock { lastPointer = location }
+    }
+
+    public var lastKnownPointer: CGPoint? {
+        lock.withLock { lastPointer }
+    }
 
     public init(api: grabby_private_api) {
         self.api = api
@@ -84,7 +96,7 @@ public final class SpaceObserver: SpaceReader, @unchecked Sendable {
     }
 
     private func displayUnderPointer() -> CGDirectDisplayID {
-        guard let location = CGEvent(source: nil)?.location else { return CGMainDisplayID() }
+        guard let location = lock.withLock({ lastPointer }) else { return CGMainDisplayID() }
         var id: CGDirectDisplayID = 0
         var count: UInt32 = 0
         if CGGetDisplaysWithPoint(location, 1, &id, &count) == .success, count > 0 {

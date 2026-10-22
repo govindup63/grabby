@@ -2,6 +2,10 @@ import CoreGraphics
 import Foundation
 import GrabbyEngines
 
+protocol MoveTapTarget: AnyObject, Sendable {
+    func moved(dx: Double, dy: Double, location: CGPoint)
+}
+
 /// Reports pointer travel on screen while enabled. Enabled only between action-button down and up.
 final class MoveTap: @unchecked Sendable {
     private let thread: TapThread
@@ -9,7 +13,7 @@ final class MoveTap: @unchecked Sendable {
     private var source: CFRunLoopSource?
     private var lastLocation: CGPoint?
 
-    var onMove: (@Sendable (Double, Double) -> Void)?
+    weak var target: (any MoveTapTarget)?
 
     init(thread: TapThread) {
         self.thread = thread
@@ -64,7 +68,7 @@ final class MoveTap: @unchecked Sendable {
         let location = event.location
         let last = lastLocation ?? location
         lastLocation = location
-        onMove?(location.x - last.x, location.y - last.y)
+        target?.moved(dx: location.x - last.x, dy: location.y - last.y, location: location)
         return Unmanaged.passUnretained(event)
     }
 }

@@ -44,8 +44,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var inspectorStarted = false
     private lazy var onboarding = OnboardingWindowController()
     private var conflictTimer: Timer?
-    /// Only ever touched on the tap thread after construction.
+    /// Only ever touched on the bridge's gesture queue after construction.
     nonisolated(unsafe) private var controller: GestureController!
+    private var bridge: GestureBridge!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         store = makeStore()
@@ -118,11 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         if tapsReady {
-            tapThread.sync { [controller, moveTap, comboTap] in
-                controller?.cancelGesture()
-                moveTap?.setEnabled(false)
-                comboTap?.setEnabled(false)
-            }
+            bridge.cancel(sync: true)
         }
         buttonTap?.destroy()
         moveTap?.destroy()
@@ -134,56 +131,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings = updated
         buttonTap.actionButton = updated.actionButton
         dock.naturalDirection = updated.naturalDirection ?? controller.systemNaturalDirection
-        tapThread.async { [controller] in controller?.settings = updated }
+        bridge.apply(updated)
         Log.settings.info("Applied settings: button=\(updated.actionButton.map(String.init) ?? "nil") tap=\(updated.tapAction.rawValue)")
     }
 
-    /// All three closures run on the tap thread, which is the only thread that drives the controller.
     private func wireTaps() {
-        let controller = self.controller!
-        let moveTap = self.moveTap!
-        let comboTap = self.comboTap!
-        buttonTap.onDown = { location in
-            moveTap.setEnabled(true)
-            comboTap.setEnabled(true)
-            controller.actionButtonDown(at: Point(x: location.x, y: location.y))
-        }
-        comboTap.onClick = { button in
-            controller.comboClick(button == .left ? .left : .right)
-        }
-        moveTap.onMove = { dx, dy in
-            controller.pointerMoved(dx: dx, dy: dy)
-        }
-        let spaces = self.spaces!
-        let tapThread = self.tapThread
-        buttonTap.onUp = { [weak self] in
-            controller.actionButtonUp()
-            moveTap.setEnabled(false)
-            comboTap.setEnabled(false)
-            if controller.lastTapWasPassThrough, let button = controller.settings.actionButton {
-                self?.replayClick(button: button)
-            }
-            if controller.awaitingVerification {
-                tapThread.after(0.4) {
-                    controller.verifySmoothGesture(spaceAfter: spaces.activeSpace())
-                    Log.gesture.debug("Verified smooth gesture, sticky=\(controller.stickyFallback)")
-                }
-            }
-        }
-    }
-
-    /// Posts the swallowed click again, tagged so ButtonTap lets it through.
-    nonisolated private func replayClick(button: Int) {
-        guard let location = CGEvent(source: nil)?.location else { return }
-        let mouseButton = CGMouseButton(rawValue: UInt32(button)) ?? .center
-        let source = GrabbyEventSource.shared
-        guard let down = CGEvent(mouseEventSource: source, mouseType: .otherMouseDown, mouseCursorPosition: location, mouseButton: mouseButton),
-              let up = CGEvent(mouseEventSource: source, mouseType: .otherMouseUp, mouseCursorPosition: location, mouseButton: mouseButton) else { return }
-        down.setIntegerValueField(.mouseEventButtonNumber, value: Int64(button))
-        up.setIntegerValueField(.mouseEventButtonNumber, value: Int64(button))
-        down.post(tap: .cghidEventTap)
-        up.post(tap: .cghidEventTap)
-        Log.tap.debug("Replayed click for button \(button)")
+        let bridge = GestureBridge(controller: controller, spaces: spaces, moveTap: moveTap, comboTap: comboTap)
+        self.bridge = bridge
+        buttonTap.onDown = { location in bridge.buttonDown(at: location) }
+        moveTap.target = bridge
+        comboTap.onClick = { button in bridge.click(button) }
+        buttonTap.onUp = { bridge.buttonUp() }
     }
 
     private func accessChanged(_ granted: Bool) {
@@ -203,11 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             buttonTap.setEnabled(false)
             if tapsReady {
-                tapThread.async { [controller, moveTap, comboTap] in
-                    controller?.cancelGesture()
-                    moveTap?.setEnabled(false)
-                    comboTap?.setEnabled(false)
-                }
+                bridge.cancel(sync: false)
             }
             statusItem.setStatus("Needs Accessibility access")
             settingsModel.status = "Needs Accessibility access"
