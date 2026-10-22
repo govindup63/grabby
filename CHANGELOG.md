@@ -2,6 +2,19 @@
 
 All notable changes to Grabby. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.1] - 2026-10-23
+
+Same gestures as 0.1.0; this release carries the app identity and the project tooling.
+
+### Added
+
+- App icon and a template menu bar icon (a pointer with motion trails).
+- README, MIT license, contributor guide, changelog, CI on a macOS runner and tagged releases.
+
+### Changed
+
+- Builds on machines with Xcode as well as Command Line Tools only.
+
 ## [0.1.0] - 2026-10-18
 
 First release.
