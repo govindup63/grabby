@@ -15,6 +15,9 @@ final class ButtonTap: @unchecked Sendable {
 
     var onDown: (@Sendable (CGPoint) -> Void)?
     var onUp: (@Sendable () -> Void)?
+    /// Answered from our own listen-only button-state tap, never by querying the system from
+    /// inside this callback (that query waits on the event stream this callback is holding).
+    var otherButtonHeld: (@Sendable () -> Bool)?
 
     var actionButton: Int? {
         get { lock.withLock { _actionButton } }
@@ -77,8 +80,7 @@ final class ButtonTap: @unchecked Sendable {
         if type == .otherMouseDown {
             // Never start a gesture on top of a live left or right button drag: injecting a swipe into
             // a drag-and-drop session can leave the dragged item stuck to the cursor.
-            if CGEventSource.buttonState(.combinedSessionState, button: .left)
-                || CGEventSource.buttonState(.combinedSessionState, button: .right) {
+            if otherButtonHeld?() == true {
                 passingThroughUntilUp = true
                 Trace.log("button \(button) down ignored: another button is held")
                 return Unmanaged.passUnretained(event)

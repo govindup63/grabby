@@ -2,6 +2,12 @@
 
 All notable changes to Grabby. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.4] - 2026-10-23
+
+### Fixed
+
+- Drag-and-drop could fail to drop while Grabby was running. Code inside the event-tap callback was making round trips to the window server (reading the pointer, listing windows for Mission Control detection, and the drag-and-drop guard's own button-state query), and the window server was waiting on that very callback. Each stall froze all mouse input for seconds and lost the release. All gesture work now runs on a separate queue, button state comes from a listen-only tap, and tap enabling happens off the callback.
+
 ## [0.1.3] - 2026-10-23
 
 ### Fixed

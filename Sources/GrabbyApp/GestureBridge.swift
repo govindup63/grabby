@@ -29,11 +29,14 @@ final class GestureBridge: MoveTapTarget, @unchecked Sendable {
 
     func buttonDown(at location: CGPoint) {
         spaces.notePointer(location)
-        moveTap.setEnabled(true)
-        comboTap.setEnabled(true)
         gate.open()
         let point = Point(x: location.x, y: location.y)
-        queue.async { [controller] in controller.actionButtonDown(at: point) }
+        queue.async { [self] in
+            // CGEventTapEnable is a window-server round trip; keep it out of the tap callback.
+            moveTap.setEnabled(true)
+            comboTap.setEnabled(true)
+            controller.actionButtonDown(at: point)
+        }
     }
 
     func moved(dx: Double, dy: Double, location: CGPoint) {
@@ -50,10 +53,10 @@ final class GestureBridge: MoveTapTarget, @unchecked Sendable {
     }
 
     func buttonUp() {
-        moveTap.setEnabled(false)
-        comboTap.setEnabled(false)
         gate.close()
         queue.async { [self] in
+            moveTap.setEnabled(false)
+            comboTap.setEnabled(false)
             controller.actionButtonUp()
             if controller.lastTapWasPassThrough, let button = controller.settings.actionButton {
                 replayClick(button: button)
@@ -70,14 +73,13 @@ final class GestureBridge: MoveTapTarget, @unchecked Sendable {
     // MARK: Called from the main thread
 
     func cancel(sync: Bool) {
-        moveTap.setEnabled(false)
-        comboTap.setEnabled(false)
         gate.close()
-        if sync {
-            queue.sync { [controller] in controller.cancelGesture() }
-        } else {
-            queue.async { [controller] in controller.cancelGesture() }
+        let work = { [self] in
+            moveTap.setEnabled(false)
+            comboTap.setEnabled(false)
+            controller.cancelGesture()
         }
+        if sync { queue.sync(execute: work) } else { queue.async(execute: work) }
     }
 
     func apply(_ settings: Settings) {

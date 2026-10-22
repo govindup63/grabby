@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var buttonTap: ButtonTap!
     private(set) var moveTap: MoveTap!
     private(set) var comboTap: ComboTap!
+    private(set) var buttonStateTap: ButtonStateTap!
     private var statusItem: StatusItemController!
     private let permissions = Permissions()
     private var tapsReady = false
@@ -68,6 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         buttonTap = ButtonTap(thread: tapThread)
         moveTap = MoveTap(thread: tapThread)
         comboTap = ComboTap(thread: tapThread)
+        buttonStateTap = ButtonStateTap(thread: tapThread)
         buttonTap.actionButton = settings.actionButton
 
         spaces = SpaceObserver(api: privateAPI)
@@ -124,6 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         buttonTap?.destroy()
         moveTap?.destroy()
         comboTap?.destroy()
+        buttonStateTap?.destroy()
     }
 
     /// Settings changed in the UI: persist is done by the model; push to the taps and the controller.
@@ -138,6 +141,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func wireTaps() {
         let bridge = GestureBridge(controller: controller, spaces: spaces, moveTap: moveTap, comboTap: comboTap)
         self.bridge = bridge
+        let buttonState = self.buttonStateTap!
+        buttonTap.otherButtonHeld = { buttonState.anyPrimaryButtonDown }
         buttonTap.onDown = { location in bridge.buttonDown(at: location) }
         moveTap.target = bridge
         comboTap.onClick = { button in bridge.click(button) }
@@ -148,7 +153,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hasAccess = granted
         if granted {
             if !tapsReady {
-                tapsReady = buttonTap.create() && moveTap.create() && comboTap.create()
+                tapsReady = buttonTap.create() && moveTap.create() && comboTap.create() && buttonStateTap.create()
             }
             buttonTap.setEnabled(true)
             if !inspectorStarted { inspectorStarted = inspector.start() }
